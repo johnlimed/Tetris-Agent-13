@@ -1,8 +1,17 @@
 # Tetris-Agent-13
 CS3243 Project: Learning to Play Tetris with Big Data!
 
+# Tracing the Program
+If player has not lost, 
+	make a move => which requires a move => calls p.pickMove(s, s.legalMoves())
+	p.pickMove reads the state, and checks the legalMoves and decides which move to play.
+	s.draw() draws the stae with the decided move
+	s.drawNext() draws the next object
+	sleeps for 0.3 seconds
+When player loses,
+	System prints out you have completed n rows
 
-# Original
+# Original Readme
 This is a basic Tetris simulation.
 
 Files:
