@@ -84,7 +84,7 @@ public class State {
 		{{2,2,1},{2,3}}
 	};
 	
-	//initialize legalMoves
+	//initialize legalMoves array for each piece
 	{
 		//for each piece type
 		for(int i = 0; i < N_PIECES; i++) {
@@ -95,13 +95,13 @@ public class State {
 				n += COLS+1-pWidth[i][j];
 			}
 			//allocate space
-			legalMoves[i] = new int[n][2];
+			legalMoves[i] = new int[n][2]; // n is number of legalMoves for this piece, second[] has 2 values containing: ORIENT/SLOT
 			//for each orientation
 			n = 0;
 			for(int j = 0; j < pOrients[i]; j++) {
 				//for each slot
 				for(int k = 0; k < COLS+1-pWidth[i][j];k++) {
-					legalMoves[i][n][ORIENT] = j;
+					legalMoves[i][n][ORIENT] = j; // i is the piece type, j = number of possible orients
 					legalMoves[i][n][SLOT] = k;
 					n++;
 				}
