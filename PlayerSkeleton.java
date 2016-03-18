@@ -81,9 +81,10 @@ public class PlayerSkeleton {
 		return aggHeight;
 	}
 
-	// function to return numCompleteLines: DONE
+	// function to return numCompleteLines: unsure
 	private static int numCompleteLines(State s) {
-		return s.getRowsCleared();
+		return s.getRowsCleared(); // this gets the cumulative total number of rows cleared so far. Do we want this? 
+		// Or do y'all want to calculate manually for each new state (not cumulative, only count rows cleared by current action)
 	}
 
 	// function to return numHoles
