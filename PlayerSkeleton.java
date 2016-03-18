@@ -66,7 +66,7 @@ public class PlayerSkeleton {
 	// mutation: to be implemented
 
 	// function to return agg height
-	private int aggHeight(State s) {
+	private static int aggHeight(State s) {
 		int aggHeight = 0;
 
 		// to be implemented
@@ -75,12 +75,12 @@ public class PlayerSkeleton {
 	}
 
 	// function to return numCompleteLines: DONE
-	private int numCompleteLines(State s) {
+	private static int numCompleteLines(State s) {
 		return s.getRowsCleared();
 	}
 
 	// function to return numHoles
-	private int numHoles(State s) {
+	private static int numHoles(State s) {
 		int numHoles = 0;
 
 		// to be implemented
@@ -88,7 +88,7 @@ public class PlayerSkeleton {
 		return numHoles;
 	}
 	// funtion to return bumpiness
-	private int bumpiness(State s) {
+	private static int bumpiness(State s) {
 		int bumpiness = 0;
 
 		// to be implemented
