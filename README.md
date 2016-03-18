@@ -83,3 +83,10 @@ xx
 
 xx
  xx
+
+# Feature Functions
+- Aggregate height
+- Complete lines
+- Holes
+- Bumpiness
+- Maximum column height
