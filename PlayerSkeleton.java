@@ -3,6 +3,8 @@ import java.util.*;
 public class PlayerSkeleton {
 
 	public static final int COLS = 10;
+	public static final int ROWS = 21;
+	public static final int N_PIECES = 7;
 
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
@@ -12,6 +14,7 @@ public class PlayerSkeleton {
 		// for each potential new state, use the GA to get the ratings to determine best move
 		// choose the best move and return it
 
+		
 		System.out.println(s.getNextPiece());
 
 		Random rand = new Random(); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
@@ -87,11 +90,21 @@ public class PlayerSkeleton {
 		// Or do y'all want to calculate manually for each new state (not cumulative, only count rows cleared by current action)
 	}
 
-	// function to return numHoles
+	// function to return numHoles: A hole is an empty space such that there is at least one tile in the same column above it.
 	private static int numHoles(State s) {
 		int numHoles = 0;
 
-		// to be implemented
+		int[][] field = s.getField();
+		int[] top = s.getTop();
+
+		for (int i = 0; i < COLS; i++) {
+			for (int j = 0; j < top[i]; j++) {
+				if (field[j][i] == 0) {
+					numHoles++;
+				}
+			}
+			// System.out.println("numHoles: " + numHoles);
+		}
 
 		return numHoles;
 	}
