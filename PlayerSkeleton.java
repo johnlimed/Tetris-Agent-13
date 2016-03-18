@@ -108,11 +108,17 @@ public class PlayerSkeleton {
 
 		return numHoles;
 	}
-	// funtion to return bumpiness
+
+	// function to return bumpiness: summing up the absolute differences between all two adjacent columns
 	private static int bumpiness(State s) {
 		int bumpiness = 0;
 
-		// to be implemented
+		int[] top = s.getTop();
+
+		for (int i = 0; i < COLS - 1; i++) {
+			bumpiness += Math.abs(top[i] - top[i+1]);
+		}
+		// System.out.println("bumpiness: " + bumpiness);
 
 		return bumpiness;
 	}
