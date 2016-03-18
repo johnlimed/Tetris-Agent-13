@@ -88,6 +88,7 @@ public class PlayerSkeleton {
 	private static int numCompleteLines(State s) {
 		return s.getRowsCleared(); // this gets the cumulative total number of rows cleared so far. Do we want this? 
 		// Or do y'all want to calculate manually for each new state (not cumulative, only count rows cleared by current action)
+		// i'm not sure if the State.java allow us to maintain a state with complete lines (for us to count) without actually executing it on the animation :/
 	}
 
 	// function to return numHoles: A hole is an empty space such that there is at least one tile in the same column above it.
