@@ -5,13 +5,25 @@ CS3243 Project: Learning to Play Tetris with Big Data!
 If player has not lost,
 
     make a move => which requires a move => calls p.pickMove(s, s.legalMoves())
-    p.pickMove reads the state, and checks the legalMoves and decides which move to play.
-    s.draw() draws the stae with the decided move
+    p.pickMove reads the state, and checks the legalMoves and decides which move to play. 
+    s.draw() draws the state with the decided move
     s.drawNext() draws the next object
     sleeps for 0.3 seconds
 When player loses,
 
 	System prints out you have completed n rows
+
+
+[][][]Legal moves
+    
+    A double array which contains an int and an array
+    First index tells you which piece type.
+    Second index is the number of legal moves 
+    Last index is the slot. 
+    
+p.pickMove
+
+    returns an int -> the slot which is used by s.makeMove() function
 
 # Original Readme
 This is a basic Tetris simulation.

@@ -3,8 +3,8 @@ public class PlayerSkeleton {
 
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
-		
-		return 0;
+		System.out.println(s.getNextPiece());
+		return 1;
 	}
 	
 	public static void main(String[] args) {
