@@ -68,11 +68,15 @@ public class PlayerSkeleton {
 	// crossover: to be implemented
 	// mutation: to be implemented
 
-	// function to return agg height
+	// function to return agg height: sum of height of each column
 	private static int aggHeight(State s) {
 		int aggHeight = 0;
 
-		// to be implemented
+		int[] top = s.getTop();
+
+		for (int i = 0; i < COLS; i++) {
+			aggHeight += top[i];
+		}
 
 		return aggHeight;
 	}
@@ -110,7 +114,7 @@ public class PlayerSkeleton {
 			if (top[i] > maxColumnHeight) {
 				maxColumnHeight = top[i];
 			}
-			System.out.println("maxColumnHeight: " + maxColumnHeight);
+			// System.out.println("maxColumnHeight: " + maxColumnHeight);
 		}
 		return maxColumnHeight;
 	}
