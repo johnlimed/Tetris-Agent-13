@@ -14,6 +14,9 @@ public class PlayerSkeleton {
 
 		System.out.println(s.getNextPiece());
 
+		Random rand = new Random(); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
+		int randMove = rand.nextInt(legalMoves.length); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
+
 		/* For debugging: to see what is stored in legalMoves
 
 		for (int i = 0; i < legalMoves.length; i++) {
@@ -28,7 +31,7 @@ public class PlayerSkeleton {
 		}
 		*/
 		
-		return 1; // return moveNumber in legalMoves[moveNum][orient/slot]
+		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
 	}
 	
 	public static void main(String[] args) {
