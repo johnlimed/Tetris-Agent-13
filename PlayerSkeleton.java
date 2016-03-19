@@ -1,25 +1,84 @@
 import java.util.*;
+import java.util.*;
 
 public class PlayerSkeleton {
 
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
+private ArrayList<FeatureFunction> features;
+private ArrayList<Float> weights;
 
+	public PlayerSkeleton() {
+		features = new ArrayList<FeatureFunction>();
+		weights = new ArrayList<Float>();
+		// to standardize, lets add the features and their corresponding weights in alphabetical order?
+		// these weights are just arbitrarily chosen starting points, we can tweak them later with the GA 
+		features.add(new AggHeight());
+		weights.add(new Float(-0.5));
+		features.add(new Bumpiness());
+		weights.add(new Float(-0.25));
+		features.add(new MaxHeight());
+		weights.add(new Float(-0.5));
+features.add(new NumHoles());
+weights.add(new Float(-0.5));
+	}
+	
+	// returns  h(n) for the given state
+	private float evaluate(ImprovedState s) {
+		float sum = 0.0f;
+		
+		for (int i=0; i<features.size(); i++)
+			sum += features.get(i).evaluate(s) * weights.get(i);
+		
+			return sum;
+	}
+	
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
-		// state is current state
+		// s is the current state
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
-		// for each legalMove, apply it to state and get the next state (see what each new state looks like)
-		// for each potential new state, use the GA to get the ratings to determine best move
-		// choose the best move and return it
-
 		
+		ImprovedState currentState = new ImprovedState(s);
+
+		int bestMove = 0;
+		boolean isNonLosingMoveFound = false;
+		float bestValue = 0.0f;
+		
+		// find the first legal move corresponding to a non-losing situation, and assume that to be the best move
+		for (int move = 0; move < legalMoves.length && isNonLosingMoveFound == false; move++) {
+			ImprovedState resultingState = currentState.tryMove(move);
+			isNonLosingMoveFound = !currentState.hasLost();
+
+			if (isNonLosingMoveFound) {
+				bestMove = move;
+				bestValue = evaluate(currentState);
+			}
+		}
+			
+		if (isNonLosingMoveFound == false)
+			return 0; // if we'll die anyway, it doesn't matter which move we do
+		
+		// now see if we can find better moves
+		for (int move = bestMove; move < legalMoves.length; move++) {
+			ImprovedState resultingState = currentState.tryMove(move);
+		float utility = evaluate(currentState);	
+		
+		if (utility > bestValue) {
+			bestValue = utility;
+			bestMove = move;
+		}
+		}
+		
+		return bestMove;
+
+		/* 
 		System.out.println(s.getNextPiece());
 
 		Random rand = new Random(); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
 		int randMove = rand.nextInt(legalMoves.length); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
-
+*/
+		
 		/* For debugging: to see what is stored in legalMoves
 
 		for (int i = 0; i < legalMoves.length; i++) {
@@ -34,7 +93,7 @@ public class PlayerSkeleton {
 		}
 		*/
 		
-		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
+// 		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
 	}
 	
 	public static void main(String[] args) {
@@ -82,7 +141,7 @@ public class PlayerSkeleton {
 	// returns aggregate height for all columns
 			private class AggHeight implements FeatureFunction {
 				@Override
-		public float evaluate(State s)  {
+		public float evaluate(ImprovedState s)  {
 				int aggHeight = 0;
 
 				int[] top = s.getTop();
@@ -98,7 +157,7 @@ public class PlayerSkeleton {
 			// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
 	private class NumHoles implements FeatureFunction {
 		@Override
-		public float evaluate(State s) {	
+		public float evaluate(ImprovedState s) {	
 			int numHoles = 0;
 
 			int[][] field = s.getField();
@@ -119,7 +178,7 @@ public class PlayerSkeleton {
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
 	private class Bumpiness implements FeatureFunction {
 		@Override
-		public float evaluate(State s) {
+		public float evaluate(ImprovedState s) {
 			int bumpiness = 0;
 
 			int[] top = s.getTop();
@@ -136,7 +195,7 @@ public class PlayerSkeleton {
 		// maximum column height heuristic: DONE
 	private class MaxHeight implements FeatureFunction {
 		@Override
-		public float evaluate(State s) {
+		public float evaluate(ImprovedState s) {
 			int maxColumnHeight = 0;
 
 			int[] top = s.getTop();
