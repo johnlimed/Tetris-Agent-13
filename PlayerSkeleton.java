@@ -57,7 +57,7 @@ public class PlayerSkeleton {
 	// GA: to be implemented
 	// Population: all the states generated from current state, given the legal moves (population should be passed in as an argument when GA is called from pickMove())
 	// Fitness function aka happiness function: aggregate of the 5 heuristics we are using, rank original states by highest happiness
-	// Selection: choose 2 parent states at random to mate
+	// Selection: choose 2 parent states at random from a pool of the top 30% fittest in the population to mate
 	// Crossover: select a random point to mix and match between 2 parents to get 2 offspring
 	// Mutation: select a random point from each off spring to mutate
 	// calculate the fitness function of each offspring
