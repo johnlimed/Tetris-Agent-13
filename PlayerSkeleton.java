@@ -71,73 +71,86 @@ public class PlayerSkeleton {
 	// crossover: to be implemented
 	// mutation: to be implemented
 
-	// function to return agg height: sum of height of each column
-	private static int aggHeight(State s) {
-		int aggHeight = 0;
-
-		int[] top = s.getTop();
-
-		for (int i = 0; i < COLS; i++) {
-			aggHeight += top[i];
-		}
-
-		return aggHeight;
-	}
-
-	// function to return numCompleteLines: unsure
+	// 	// function to return numCompleteLines: unsure
 	private static int numCompleteLines(State s) {
 		return s.getRowsCleared(); // this gets the cumulative total number of rows cleared so far. Do we want this? 
 		// Or do y'all want to calculate manually for each new state (not cumulative, only count rows cleared by current action)
 		// i'm not sure if the State.java allow us to maintain a state with complete lines (for us to count) without actually executing it on the animation :/
 	}
 
-	// function to return numHoles: A hole is an empty space such that there is at least one tile in the same column above it.
-	private static int numHoles(State s) {
-		int numHoles = 0;
 
-		int[][] field = s.getField();
-		int[] top = s.getTop();
+	// returns aggregate height for all columns
+			private class AggHeight implements FeatureFunction {
+				@Override
+		public float evaluate(State s)  {
+				int aggHeight = 0;
 
-		for (int i = 0; i < COLS; i++) {
-			for (int j = 0; j < top[i]; j++) {
-				if (field[j][i] == 0) {
-					numHoles++;
+				int[] top = s.getTop();
+
+				for (int i = 0; i < State.COLS; i++) {
+					aggHeight += top[i];
+				}
+
+				return (float) aggHeight;
+			}
+			}
+			
+			// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
+	private class NumHoles implements FeatureFunction {
+		@Override
+		public float evaluate(State s) {	
+			int numHoles = 0;
+
+			int[][] field = s.getField();
+			int[] top = s.getTop();
+
+			for (int c = 0; c < State.COLS; c++) {
+				for (int r = 0; r < top[c]; r++) {
+					if (field[r][c] == 0) {
+						numHoles++;
+					}
 				}
 			}
 			// System.out.println("numHoles: " + numHoles);
+			return numHoles;
 		}
-
-		return numHoles;
 	}
 
-	// function to return bumpiness: summing up the absolute differences between all two adjacent columns
-	private static int bumpiness(State s) {
-		int bumpiness = 0;
+	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
+	private class Bumpiness implements FeatureFunction {
+		@Override
+		public float evaluate(State s) {
+			int bumpiness = 0;
 
-		int[] top = s.getTop();
+			int[] top = s.getTop();
 
-		for (int i = 0; i < COLS - 1; i++) {
-			bumpiness += Math.abs(top[i] - top[i+1]);
-		}
-		// System.out.println("bumpiness: " + bumpiness);
-
-		return bumpiness;
-	}
-
-	// function to return max column height: DONE
-	private static int maxColumnHeight(State s) {
-		int maxColumnHeight = 0;
-
-		int[] top = s.getTop();
-
-		for (int i = 0; i < COLS; i++) {
-			// System.out.println("top: " + top[i]);
-			if (top[i] > maxColumnHeight) {
-				maxColumnHeight = top[i];
+			for (int i = 0; i < State.COLS - 1; i++) {
+				bumpiness += Math.abs(top[i] - top[i+1]);
 			}
-			// System.out.println("maxColumnHeight: " + maxColumnHeight);
+			// System.out.println("bumpiness: " + bumpiness);
+
+			return bumpiness;
 		}
-		return maxColumnHeight;
 	}
-	
+
+		// maximum column height heuristic: DONE
+	private class MaxHeight implements FeatureFunction {
+		@Override
+		public float evaluate(State s) {
+			int maxColumnHeight = 0;
+
+			int[] top = s.getTop();
+
+			for (int i = 0; i < State.COLS; i++) {
+				// System.out.println("top: " + top[i]);
+				if (top[i] > maxColumnHeight) {
+					maxColumnHeight = top[i];
+				}
+				// System.out.println("maxColumnHeight: " + maxColumnHeight);
+			}
+			return maxColumnHeight;
+		}
+	}
+		
 }
+
