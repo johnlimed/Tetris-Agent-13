@@ -48,11 +48,11 @@ weights.add(new Float(-0.5));
 		// find the first legal move corresponding to a non-losing situation, and assume that to be the best move
 		for (int move = 0; move < legalMoves.length && isNonLosingMoveFound == false; move++) {
 			ImprovedState resultingState = currentState.tryMove(move);
-			isNonLosingMoveFound = !currentState.hasLost();
+			isNonLosingMoveFound = !resultingState.hasLost();
 
 			if (isNonLosingMoveFound) {
 				bestMove = move;
-				bestValue = evaluate(currentState);
+				bestValue = evaluate(resultingState);
 			}
 		}
 			
@@ -62,7 +62,7 @@ weights.add(new Float(-0.5));
 		// now see if we can find better moves
 		for (int move = bestMove; move < legalMoves.length; move++) {
 			ImprovedState resultingState = currentState.tryMove(move);
-		float utility = evaluate(currentState);	
+		float utility = evaluate(resultingState);	
 		
 		if (utility > bestValue) {
 			bestValue = utility;

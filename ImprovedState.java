@@ -249,7 +249,7 @@ public class ImprovedState {
 						}
 						//lower the top
 						newTop[c]--;
-						while(newTop[c]>=1 && newField[top[c]-1][c]==0)	newTop[c]--;
+						while(newTop[c]>=1 && newField[newTop[c]-1][c]==0)	newTop[c]--;
 					}
 				}
 			}
