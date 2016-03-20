@@ -116,9 +116,10 @@ for (int individual = 1; individual < population.size(); individual++) {
 // returns information about the lowest, average and highest score on an individual after playing NUM_GAMES games, each game with random piece sequences
 private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual) {
 	player.setFeatureWeightPairs(individual);
-	int lowest = 0, highest = 0, total = 0;
+	int lowest = player.playGame(false); 
+	int highest = lowest, total = lowest;
 	
-	for (int game = 0; game < NUM_GAMES; game++) {
+	for (int game = 1; game < NUM_GAMES; game++) {
 		int score = player.playGame(false);
 		total += score;
 		
