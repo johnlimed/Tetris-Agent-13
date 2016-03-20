@@ -6,6 +6,7 @@ public class GeneticAlgorithm {
 public int populationSize;
 public float crossoverRate; 
 public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
+public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
 ArrayList<ArrayList<FeatureWeightPair>> population;
 PlayerSkeleton player;
 private Random rng;
@@ -42,14 +43,47 @@ private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 
 	return individual;
 }
+
 // returns a new float in the range [min, max)
 private float randomFloat(float minInclusive, float maxExclusive) {
  return (float) ThreadLocalRandom.current().nextDouble(minInclusive, maxExclusive);
 }
 
-// incomplete
-public void train(int generations) {
+//returns a new int in the range [min, max)
+// to have both endpoints included, pass a value of max+1 to this function
+private int randomInt(int minInclusive, int maxExclusive) {
+return  ThreadLocalRandom.current().nextInt(minInclusive, maxExclusive);
+}
+
+// run the genetic algorithm for a specified number of generations
+// returns fitness information for the best individual in the last generation
+public FitnessAssessment trainFor(int generations) {
 	assert(generations > 0);
+	for (int generation = 0; generation < generations; generation++) {
+population = reproduce();
+	}
+	
+	return findBestIndividual();
+}
+
+	// reproduces children
+	private ArrayList<ArrayList<FeatureWeightPair>> reproduce() {
+		int iterations = population.size()/2;
+		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
+
+		for (int i = 0; i<iterations; i++) {
+			ArrayList<FeatureWeightPair> parent1 = tournamentSelection(TOURNAMENT_SIZE);
+			ArrayList<FeatureWeightPair> parent2 = tournamentSelection(TOURNAMENT_SIZE);
+			// crossover (mate) these parents
+			// mutate children
+			// add the 2 mutated children to nextGeneration
+		}
+
+		return children;
+	}
+	
+	// returns fitness information on the best individual
+private FitnessAssessment findBestIndividual() {
 	int bestIndex = 0;
 FitnessAssessment bestFitness = assessFitness(population.get(0));
 
@@ -62,7 +96,7 @@ for (int individual = 1; individual < population.size(); individual++) {
 	}
 }
 
-
+	return bestFitness;
 }
 
 // returns information about the lowest, average and highest score on an individual after playing NUM_GAMES games, each game with random piece sequences
@@ -80,6 +114,28 @@ private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual)
 	
 	float average = total * 1.0f / NUM_GAMES;
 	return new FitnessAssessment(individual, lowest, average, highest);
+}
+
+private ArrayList<FeatureWeightPair> tournamentSelection(int tournamentSize) {
+	int best = randomInt(0, population.size());
+	FitnessAssessment bestFitness = assessFitness(population.get(best));
+	
+	for (int i = 2; i <= tournamentSize; i++) {
+		int next = randomInt(0, population.size());
+		
+		// ensure that the next individual selected is different from the existing best
+		while (best == next)
+			next = randomInt(0, population.size());
+		
+		FitnessAssessment fitness = assessFitness(population.get(next));
+		
+		if (bestFitness.compareTo(fitness)  > 0) {
+			bestFitness = fitness;
+			best = next;
+		}
+	}
+	
+	return population.get(best);
 }
 
 // crosses over 2 individuals, not implemented 
@@ -102,25 +158,11 @@ for (int i = 0; i < individual.size(); i++) {
 	}
 
 	public static void main(String[] args) {
-		GeneticAlgorithm ga = new GeneticAlgorithm(100);
-		
-		// Fitness function aka happiness function: aggregate of the 5 heuristics we are using, rank original states by highest happiness
-		// Selection: choose 2 parent states at random from a pool of the top 30% fittest in the population to mate
-		// Crossover: select a random point to mix and match between 2 parents to get 2 offspring
-		// Mutation: select a random point from each off spring to mutate
-		// calculate the fitness function of each offspring
-		// return the offspring with the highest happiness
-		// end of GA
-
-		//***************************************** HELPER FUNCTIONS *************************************************
-
-		// fitness function: to be implmented
-		// selection function: to be implemented
-		// crossover: to be implemented
-		// mutation: to be implemented
-
-
-
+		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
+FitnessAssessment result =ga.trainFor(2); // number of generations to train for 		
+System.out.println("Training complete. The best individual is ");
+System.out.println(result);
+				
 	}
 
 	// stores information about the fitness of an individual
@@ -158,6 +200,17 @@ for (int i = 0; i < individual.size(); i++) {
 			return 1;
 		
 		return 0;
+		}
+		
+		@Override
+		public String toString() {
+			String str = "lowest = " + lowest + " average = " + average + " highest = " + highest + "\n";
+			str += "weights: ";
+			
+			for (FeatureWeightPair f : individual)
+				str += f.weight;
+			
+			return str;
 		}
 	}
 

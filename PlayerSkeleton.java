@@ -96,7 +96,7 @@ private ArrayList<FeatureWeightPair> features;
 	}
 	
 	// plays a game , returning the number of rows completed
-	// use the setFeaturesAndWeights function first
+	// use the setFeatureWeightPairs function first
 	public int playGame(boolean draw) {
 		assert (features.isEmpty() == false); // must set some features to use first
 		State s = new State();
