@@ -1,36 +1,33 @@
 import java.util.*;
-import java.util.*;
+
 
 public class PlayerSkeleton {
 
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
-private ArrayList<FeatureFunction> features;
-private ArrayList<Float> weights;
+private ArrayList<FeatureWeightPair> features;
+
 
 	public PlayerSkeleton() {
-		features = new ArrayList<FeatureFunction>();
-		weights = new ArrayList<Float>();
-		// to standardize, lets add the features and their corresponding weights in alphabetical order?
-		// these weights are just arbitrarily chosen starting points, we can tweak them later with the GA 
-		features.add(new AggHeight());
-		weights.add(new Float(-0.5));
-		features.add(new Bumpiness());
-		weights.add(new Float(-0.25));
-		features.add(new MaxHeight());
-		weights.add(new Float(-0.5));
-features.add(new NumHoles());
-weights.add(new Float(-0.5));
+		features = new ArrayList<FeatureWeightPair>();
+
+	}
+	
+
+	public void setFeatureWeightPairs(ArrayList<FeatureWeightPair> features) {
+		this.features = features;
 	}
 	
 	// returns  h(n) for the given state
 	private float evaluate(ImprovedState s) {
 		float sum = 0.0f;
 		
-		for (int i=0; i<features.size(); i++)
-			sum += features.get(i).evaluate(s) * weights.get(i);
-		
+		for (int i=0; i<features.size(); i++) {
+			FeatureWeightPair f = features.get(i);
+			sum += f.feature.evaluate(s) * f.weight;
+		}
+			
 			return sum;
 	}
 	
@@ -62,12 +59,14 @@ weights.add(new Float(-0.5));
 		// now see if we can find better moves
 		for (int move = bestMove; move < legalMoves.length; move++) {
 			ImprovedState resultingState = currentState.tryMove(move);
+			if (resultingState.hasLost() == false) {
 		float utility = evaluate(resultingState);	
 		
 		if (utility > bestValue) {
 			bestValue = utility;
 			bestMove = move;
 		}
+			}
 		}
 		
 		return bestMove;
@@ -96,7 +95,45 @@ weights.add(new Float(-0.5));
 // 		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
 	}
 	
+	// plays a game , returning the number of rows completed
+	// use the setFeaturesAndWeights function first
+	public int playGame(boolean draw) {
+		assert (features.isEmpty() == false); // must set some features to use first
+		State s = new State();
+		
+		if (draw)
+			new TFrame(s);
+
+		while(!s.hasLost()) {
+			s.makeMove(pickMove(s,s.legalMoves()));
+			
+			if (draw) {
+			s.draw();
+			s.drawNext(0,0);
+			
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			}
+			
+		}
+	
+		return s.getRowsCleared();
+	}
+	
 	public static void main(String[] args) {
+		PlayerSkeleton p = new PlayerSkeleton();
+		// these weights are just arbitrarily chosen starting points, we can tweak them later with the GA
+		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
+fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
+		fwPairs.add(new FeatureWeightPair(p.new Bumpiness(), -0.25f));
+		fwPairs.add(new FeatureWeightPair(p.new MaxHeight(), -0.5f));
+		fwPairs.add(new FeatureWeightPair(p.new NumHoles(), -0.5f));
+			p.setFeatureWeightPairs(fwPairs);	
+		System.out.println("You have completed "+p.playGame(true) +" rows.");
+		/* 
 		State s = new State();
 		new TFrame(s);
 		PlayerSkeleton p = new PlayerSkeleton();
@@ -111,6 +148,8 @@ weights.add(new Float(-0.5));
 			}
 		}
 		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
+		*/
+		
 	}
 
 	// GA: to be implemented
