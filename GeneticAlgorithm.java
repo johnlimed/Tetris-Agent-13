@@ -15,7 +15,6 @@ public GeneticAlgorithm(int populationSize) {
 	rng = new Random();
 	player = new PlayerSkeleton();
 	population = new ArrayList<ArrayList<FeatureWeightPair>>(populationSize);
-	CROSSOVER_RATE = 1.0f / populationSize;
 	
 	for (int i = 0; i < populationSize; i++) {
 		population.add(generateRandomIndividual());
