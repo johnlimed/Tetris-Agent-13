@@ -127,10 +127,10 @@ private ArrayList<FeatureWeightPair> features;
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are just arbitrarily chosen starting points, we can tweak them later with the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
-		fwPairs.add(new FeatureWeightPair(p.new Bumpiness(), -0.25f));
-		fwPairs.add(new FeatureWeightPair(p.new MaxHeight(), -0.5f));
-		fwPairs.add(new FeatureWeightPair(p.new NumHoles(), -0.5f));
+fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.5f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.25f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.5f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.5f));
 			p.setFeatureWeightPairs(fwPairs);	
 		System.out.println("You have completed "+p.playGame(true) +" rows.");
 		/* 
@@ -152,24 +152,8 @@ fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
 		
 	}
 
-	// GA: to be implemented
-	// Population: all the states generated from current state, given the legal moves (population should be passed in as an argument when GA is called from pickMove())
-	// Fitness function aka happiness function: aggregate of the 5 heuristics we are using, rank original states by highest happiness
-	// Selection: choose 2 parent states at random from a pool of the top 30% fittest in the population to mate
-	// Crossover: select a random point to mix and match between 2 parents to get 2 offspring
-	// Mutation: select a random point from each off spring to mutate
-	// calculate the fitness function of each offspring
-	// return the offspring with the highest happiness
-	// end of GA
-
-	//***************************************** HELPER FUNCTIONS *************************************************
-
-	// fitness function: to be implmented
-	// selection function: to be implemented
-	// crossover: to be implemented
-	// mutation: to be implemented
-
-	// 	// function to return numCompleteLines: unsure
+		
+	// function to return numCompleteLines: unsure
 	private static int numCompleteLines(State s) {
 		return s.getRowsCleared(); // this gets the cumulative total number of rows cleared so far. Do we want this? 
 		// Or do y'all want to calculate manually for each new state (not cumulative, only count rows cleared by current action)
@@ -178,7 +162,7 @@ fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
 
 
 	// returns aggregate height for all columns
-			private class AggHeight implements FeatureFunction {
+			public static class AggHeight implements FeatureFunction {
 				@Override
 		public float evaluate(ImprovedState s)  {
 				int aggHeight = 0;
@@ -194,7 +178,7 @@ fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
 			}
 			
 			// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
-	private class NumHoles implements FeatureFunction {
+	public static class NumHoles implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {	
 			int numHoles = 0;
@@ -215,7 +199,7 @@ fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
 	}
 
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
-	private class Bumpiness implements FeatureFunction {
+	public static class Bumpiness implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
 			int bumpiness = 0;
@@ -232,7 +216,7 @@ fwPairs.add(new FeatureWeightPair(p.new AggHeight(), -0.5f));
 	}
 
 		// maximum column height heuristic: DONE
-	private class MaxHeight implements FeatureFunction {
+	public static class MaxHeight implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
 			int maxColumnHeight = 0;
