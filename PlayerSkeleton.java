@@ -125,12 +125,12 @@ private ArrayList<FeatureWeightPair> features;
 	
 	public static void main(String[] args) {
 		PlayerSkeleton p = new PlayerSkeleton();
-		// these weights are just arbitrarily chosen starting points, we can tweak them later with the GA
+		// these weights are from a test run with 2 generations of the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.5f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.25f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.5f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.5f));
+fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -1.5823991f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.33376628f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.19359511f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.23551378f));
 			p.setFeatureWeightPairs(fwPairs);	
 		System.out.println("You have completed "+p.playGame(true) +" rows.");
 		/* 

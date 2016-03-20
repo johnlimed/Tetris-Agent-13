@@ -4,7 +4,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class GeneticAlgorithm {
 public int populationSize;
-public float crossoverRate; 
+public static float CROSSOVER_RATE = 0.1f; 
 public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
 ArrayList<ArrayList<FeatureWeightPair>> population;
@@ -15,7 +15,7 @@ public GeneticAlgorithm(int populationSize) {
 	rng = new Random();
 	player = new PlayerSkeleton();
 	population = new ArrayList<ArrayList<FeatureWeightPair>>(populationSize);
-	crossoverRate = 1.0f / populationSize;
+	CROSSOVER_RATE = 1.0f / populationSize;
 	
 	for (int i = 0; i < populationSize; i++) {
 		population.add(generateRandomIndividual());
@@ -60,6 +60,7 @@ return  ThreadLocalRandom.current().nextInt(minInclusive, maxExclusive);
 public FitnessAssessment trainFor(int generations) {
 	assert(generations > 0);
 	for (int generation = 0; generation < generations; generation++) {
+		System.out.println("currently on generation " + generation);
 population = reproduce();
 	}
 	
@@ -72,14 +73,27 @@ population = reproduce();
 		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
 
 		for (int i = 0; i<iterations; i++) {
-			ArrayList<FeatureWeightPair> parent1 = tournamentSelection(TOURNAMENT_SIZE);
-			ArrayList<FeatureWeightPair> parent2 = tournamentSelection(TOURNAMENT_SIZE);
-			// crossover (mate) these parents
-			// mutate children
-			// add the 2 mutated children to nextGeneration
+			// find 2 parents to mate
+			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE));
+			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE));
+			uniformCrossover(child1, child2);
+			mutate(child1);
+			mutate(child2);
+			children.add(child1);
+			children.add(child2);
 		}
 
 		return children;
+	}
+	
+	// does a deep copy of an individual's weights
+	ArrayList<FeatureWeightPair> deepCopyIndividual(ArrayList<FeatureWeightPair> individual) {
+		ArrayList<FeatureWeightPair> copy = new ArrayList<FeatureWeightPair>(individual.size());
+		
+		for (int i = 0; i < individual.size(); i++)
+			copy.add(new FeatureWeightPair(individual.get(i).feature, individual.get(i).weight));
+		
+		return copy;
 	}
 	
 	// returns fitness information on the best individual
@@ -138,9 +152,16 @@ private ArrayList<FeatureWeightPair> tournamentSelection(int tournamentSize) {
 	return population.get(best);
 }
 
-// crosses over 2 individuals, not implemented 
-private void crossover(ArrayList<FeatureWeightPair> x, ArrayList<FeatureWeightPair> y) {
-
+// crosses over 2 individuals using uniform crossover 
+private void uniformCrossover(ArrayList<FeatureWeightPair> x, ArrayList<FeatureWeightPair> y) {
+for (int i = 0; i < x.size(); i++) {
+	if (CROSSOVER_RATE >= randomFloat(0.0f, 1.0f)) {
+		// swap the genes on these 2 vectors 
+		float temp = x.get(i).weight;
+		x.get(i).weight = y.get(i).weight;
+		y.get(i).weight = temp;
+	}
+}
 }
 
 // mutates an individual using the Gaussian Convolution algorithm
