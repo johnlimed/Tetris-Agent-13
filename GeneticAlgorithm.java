@@ -208,7 +208,7 @@ System.out.println(result);
 			str += "weights: ";
 			
 			for (FeatureWeightPair f : individual)
-				str += f.weight;
+				str += f.weight + ", ";
 			
 			return str;
 		}
