@@ -127,13 +127,13 @@ public class PlayerSkeleton {
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.4164334f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.81970763f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.93703204f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -5.9621563f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), -4.838464f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), -2.4920862f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.4164334f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.81970763f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.93703204f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -5.9621563f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), -4.838464f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
 		System.out.println("You have completed "+p.playGame(true) +" rows.");
 		/* 
@@ -207,6 +207,7 @@ public class PlayerSkeleton {
 
 			return new Float(sumOfPitDepth);
 		}
+		
 	}
 	
 	// Returns the average height across the columns
@@ -220,13 +221,15 @@ public class PlayerSkeleton {
 			}
 			return (float) avgHeight/State.COLS;
 		}
-	}
+		
+		}
 	
 	public static class NumRowsCleared implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s)  {
 			return new Float(s.getRowsCleared());
 		}
+		
 	}
 	
 	// returns aggregate height for all columns
@@ -243,7 +246,8 @@ public class PlayerSkeleton {
 
 			return (float) aggHeight;
 		}
-	}
+		
+		}
 
 	// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
 	public static class NumHoles implements FeatureFunction {
@@ -264,6 +268,7 @@ public class PlayerSkeleton {
 			// System.out.println("numHoles: " + numHoles);
 			return numHoles;
 		}
+		
 	}
 
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
@@ -282,8 +287,9 @@ public class PlayerSkeleton {
 			return bumpiness;
 		}
 	}
+		
 
-	// maximum column height heuristic: DONE
+	// maximum column height heuristic
 	public static class MaxHeight implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
@@ -300,7 +306,7 @@ public class PlayerSkeleton {
 			}
 			return maxColumnHeight;
 		}
-	}
-
+		
 }
 
+}

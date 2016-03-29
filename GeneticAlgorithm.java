@@ -34,16 +34,16 @@ public class GeneticAlgorithm {
 		if (!isLogging)
 			return;
 		
-		String str = "population of " + population.size() + " individuals are\r\n";
+String str = "population of " + population.size() + " individuals are\r\n";
 
-		for (int i=0; i<population.size(); i++) {
-			str += i + ": " + getIndividualAsStr(i);
-			str += "\r\n";
-		}
-
-		log(str);
+for (int i=0; i<population.size(); i++) {
+		str += i + ": " + getIndividualAsStr(i);
+		str += "\r\n";
+}
+		
+log(str);
 	}
-
+	
 	private String getIndividualAsStr(ArrayList<FeatureWeightPair> individual) {
 		String str = "";
 		
@@ -61,19 +61,18 @@ public class GeneticAlgorithm {
 	private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 		ArrayList<FeatureWeightPair> individual = new ArrayList<FeatureWeightPair>();
 		// all the feature functions we're using so far contribute negatively to happiness and so should be minimized,
-		// 	hence their weights should be negative
+// 	hence their weights should be negative
 		// for example, the presence of holes should decrease happiness
 		// not sure if -1.0 is a good lower bound for the initial population
 
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f)));
-
-
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 1.0f), true)); // this increases happiness
+		
 		return individual;
 	}
 
@@ -83,13 +82,18 @@ public class GeneticAlgorithm {
 	}
 
 	//returns a new int in the range [min, max)
-	// to have both endpoints included, pass a value of max+1 to this function
+// to have both endpoints included, pass a value of max+1 to this function
 	private int randomInt(int minInclusive, int maxExclusive) {
 		return  ThreadLocalRandom.current().nextInt(minInclusive, maxExclusive);
 	}
 
+	// returns a new random float according to the gaussian distribution with the configured mu and sigma
+	private float nextGaussian(float mu, float sigma) {
+		return mu + ((float) rng.nextGaussian() * sigma);
+	}
+	
 	// run the genetic algorithm for a specified number of generations
-	// returns fitness information for the best individual in the last generation
+// returns fitness information for the best individual in the last generation
 	public FitnessAssessment trainFor(int generations) {
 		assert(generations > 0);
 		log("training for " + generations + " generations:");
@@ -141,7 +145,7 @@ public class GeneticAlgorithm {
 		ArrayList<FeatureWeightPair> copy = new ArrayList<FeatureWeightPair>(individual.size());
 
 		for (int i = 0; i < individual.size(); i++)
-			copy.add(new FeatureWeightPair(individual.get(i).feature, individual.get(i).weight));
+			copy.add(new FeatureWeightPair(individual.get(i).feature, individual.get(i).weight, individual.get(i).increasesHappiness));
 
 		return copy;
 	}
@@ -219,11 +223,16 @@ public class GeneticAlgorithm {
 	private void mutate(ArrayList<FeatureWeightPair> individual) {
 		for (int i = 0; i < individual.size(); i++) {
 			float n = 0.0f;
+if (individual.get(i).increasesHappiness)
+	do {
+		n  = nextGaussian(0.0f, 0.1f); 
+	} while (individual.get(i).weight + n <= 0.0f);
 
+else 
 			do {
-				n  = (float) rng.nextGaussian(); // this uses standard dev of 1.0, not sure if this needs to be changed later
+				n  = nextGaussian(0.0f, 0.1f); 
 			} while (individual.get(i).weight + n >= 0.0f);
-
+		
 			individual.get(i).weight += n;
 		}
 
@@ -249,10 +258,10 @@ public class GeneticAlgorithm {
 	}
 	
 	public static void main(String[] args) {
-		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
-		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
 		loggerInit();
-		log("test");
+	
+		GeneticAlgorithm ga = new GeneticAlgorithm(6); // population size
+		FitnessAssessment result =ga.trainFor(2); // number of generations to train for
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
 
