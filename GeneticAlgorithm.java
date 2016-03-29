@@ -260,8 +260,8 @@ else
 	public static void main(String[] args) {
 		loggerInit();
 	
-		GeneticAlgorithm ga = new GeneticAlgorithm(6); // population size
-		FitnessAssessment result =ga.trainFor(2); // number of generations to train for
+		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
+		FitnessAssessment result =ga.trainFor(5); // number of generations to train for
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
 
