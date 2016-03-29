@@ -1,10 +1,17 @@
 import java.util.*;
 // import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class GeneticAlgorithm {
+	private static final boolean isLogging = true;
+	private static final Logger logger = Logger.getLogger("GeneticAlgorithm");
 	public int populationSize;
-	public static float CROSSOVER_RATE = 0.1f;
+	public static float CROSSOVER_RATE = 0.5f;
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
 	ArrayList<ArrayList<FeatureWeightPair>> population;
@@ -18,16 +25,39 @@ public class GeneticAlgorithm {
 
 		for (int i = 0; i < populationSize; i++) {
 			population.add(generateRandomIndividual());
-		/* 
-		System.out.print("individual " + i + ":");
-		for (FeatureWeightPair f : population.get(i)) {
-			System.out.print(f.weight + ", ");
 		}
-		System.out.print("\n");
-		*/
-		}
+		log("Random individuals generated."); 
+		logPopulation();
 	}
 
+	private void logPopulation() {
+		if (!isLogging)
+			return;
+		
+String str = "population of " + population.size() + " individuals are\r\n";
+
+for (int i=0; i<population.size(); i++) {
+		str += i + ": " + getIndividualAsStr(i);
+		str += "\r\n";
+}
+		
+log(str);
+	}
+	
+	private String getIndividualAsStr(ArrayList<FeatureWeightPair> individual) {
+		String str = "";
+		
+		for (FeatureWeightPair f : individual) {
+			str += f.weight + ", ";
+		}
+		
+		return str;
+	}
+	
+	private String getIndividualAsStr(int i) {
+		return getIndividualAsStr(population.get(i));
+	}
+	
 	private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 		ArrayList<FeatureWeightPair> individual = new ArrayList<FeatureWeightPair>();
 		// all the feature functions we're using so far contribute negatively to happiness and so should be minimized,
@@ -35,11 +65,14 @@ public class GeneticAlgorithm {
 		// for example, the presence of holes should decrease happiness
 		// not sure if -1.0 is a good lower bound for the initial population
 
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f)));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f)));
-
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 1.0f), true)); // this increases happiness
+		
 		return individual;
 	}
 
@@ -54,13 +87,23 @@ public class GeneticAlgorithm {
 		return  ThreadLocalRandom.current().nextInt(minInclusive, maxExclusive);
 	}
 
+	// returns a new random float according to the gaussian distribution with the configured mu and sigma
+	private float nextGaussian(float mu, float sigma) {
+		return mu + ((float) rng.nextGaussian() * sigma);
+	}
+	
 	// run the genetic algorithm for a specified number of generations
 // returns fitness information for the best individual in the last generation
 	public FitnessAssessment trainFor(int generations) {
 		assert(generations > 0);
+		log("training for " + generations + " generations:");
+		
 		for (int generation = 0; generation < generations; generation++) {
 			System.out.println("currently on generation " + generation);
+			log("currently on generation " + generation);
 			population = reproduce();
+			log("population after reproduction:");
+			logPopulation();
 		}
 
 		return findBestIndividual();
@@ -75,9 +118,21 @@ public class GeneticAlgorithm {
 			// find 2 parents to mate
 			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE));
 			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE));
+			
+			if (isLogging)
+			log("mating " + getIndividualAsStr(child1) + " with " + getIndividualAsStr(child2));
+			
 			uniformCrossover(child1, child2);
+			
+			if (isLogging)
+			log("After crossover: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
+
 			mutate(child1);
 			mutate(child2);
+			
+			if (isLogging)
+				log("After mutation: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
+		
 			children.add(child1);
 			children.add(child2);
 		}
@@ -90,7 +145,7 @@ public class GeneticAlgorithm {
 		ArrayList<FeatureWeightPair> copy = new ArrayList<FeatureWeightPair>(individual.size());
 
 		for (int i = 0; i < individual.size(); i++)
-			copy.add(new FeatureWeightPair(individual.get(i).feature, individual.get(i).weight));
+			copy.add(new FeatureWeightPair(individual.get(i).feature, individual.get(i).weight, individual.get(i).increasesHappiness));
 
 		return copy;
 	}
@@ -168,18 +223,44 @@ public class GeneticAlgorithm {
 	private void mutate(ArrayList<FeatureWeightPair> individual) {
 		for (int i = 0; i < individual.size(); i++) {
 			float n = 0.0f;
+if (individual.get(i).increasesHappiness)
+	do {
+		n  = nextGaussian(0.0f, 0.1f); 
+	} while (individual.get(i).weight + n <= 0.0f);
 
+else 
 			do {
-				n  = (float) rng.nextGaussian(); // this uses standard dev of 1.0, not sure if this needs to be changed later
+				n  = nextGaussian(0.0f, 0.1f); 
 			} while (individual.get(i).weight + n >= 0.0f);
-
+		
 			individual.get(i).weight += n;
 		}
 
 	}
 
+	public static void loggerInit() {
+		try {
+			FileHandler handler = new FileHandler("GeneticAlgorithm.txt");
+			handler.setFormatter(new SimpleFormatter());
+			LogManager.getLogManager().reset();
+			logger.addHandler(handler);
+			logger.log(Level.INFO, "logger initialized\n");
+		} catch (Exception e) {
+			/* error opening the log file - just get rid of logging so it won't 
+			 * print to the console while the user is running the program */
+			LogManager.getLogManager().reset();
+		}
+	}
+
+	private static void log(String msg) {
+		if (isLogging)
+		logger.log(Level.INFO, msg);
+	}
+	
 	public static void main(String[] args) {
-		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
+		loggerInit();
+	
+		GeneticAlgorithm ga = new GeneticAlgorithm(6); // population size
 		FitnessAssessment result =ga.trainFor(2); // number of generations to train for
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);

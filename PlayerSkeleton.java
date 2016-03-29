@@ -141,10 +141,13 @@ public class PlayerSkeleton {
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -1.5823991f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.33376628f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.19359511f));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.23551378f));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.4164334f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.81970763f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.93703204f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -5.9621563f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), -4.838464f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
 		System.out.println("You have completed "+p.playGame(true) +" rows.");
 		/* 
@@ -174,7 +177,75 @@ public class PlayerSkeleton {
 		// i'm not sure if the State.java allow us to maintain a state with complete lines (for us to count) without actually executing it on the animation :/
 	}
 
+	// Considered as a pit if the adjacent columns are >= 2. Depth = diff in height with the shortest adjacent col
+	// should refactor this some more
+	public static class SumOfPitDepth implements FeatureFunction {
+		@Override
+		public float evaluate(ImprovedState s)  {
+			int[] top = s.getTop();
+			int sumOfPitDepth = 0;
 
+			int pitHeight;
+			int heightOfLeftColumn;
+			int heightOfRightCol;
+
+			// pit depth of first column
+			pitHeight = top[0];
+			heightOfRightCol = top[1];
+			int heightDiff = heightOfRightCol - pitHeight;
+			if (heightDiff > 2) {
+				sumOfPitDepth += heightDiff;
+			}
+
+			for (int col = 0; col < State.COLS - 2; col++) {
+				heightOfLeftColumn = top[col];
+				pitHeight = top[col+1];
+				heightOfRightCol = top[col+2];
+
+				int leftDiff = heightOfLeftColumn - pitHeight;
+				int rightDiff = heightOfRightCol - pitHeight;
+				int minDiff = Math.min(leftDiff, rightDiff);
+
+				if (minDiff >= 2) {
+					sumOfPitDepth += minDiff;
+				}
+			}
+
+			// pit depth of last column
+			pitHeight = top[State.COLS - 1];
+			heightOfLeftColumn = top[State.COLS - 2];
+			heightDiff = heightOfLeftColumn - pitHeight;
+			if (heightDiff > 2) {
+				sumOfPitDepth += heightDiff;
+			}
+
+			return new Float(sumOfPitDepth);
+		}
+		
+	}
+	
+	// Returns the average height across the columns
+	public static class MeanHeightDiff implements FeatureFunction {
+		@Override
+		public float evaluate(ImprovedState s)  {
+			int avgHeight = 0;
+			int[] top = s.getTop();
+			for (int i = 0; i < State.COLS; i++) {
+				avgHeight += top[i];
+			}
+			return (float) avgHeight/State.COLS;
+		}
+		
+		}
+	
+	public static class NumRowsCleared implements FeatureFunction {
+		@Override
+		public float evaluate(ImprovedState s)  {
+			return new Float(s.getRowsCleared());
+		}
+		
+	}
+	
 	// returns aggregate height for all columns
 	public static class AggHeight implements FeatureFunction {
 		@Override
@@ -189,7 +260,8 @@ public class PlayerSkeleton {
 
 			return (float) aggHeight;
 		}
-	}
+		
+		}
 
 	// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
 	public static class NumHoles implements FeatureFunction {
@@ -210,6 +282,7 @@ public class PlayerSkeleton {
 			// System.out.println("numHoles: " + numHoles);
 			return numHoles;
 		}
+		
 	}
 
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
@@ -228,8 +301,9 @@ public class PlayerSkeleton {
 			return bumpiness;
 		}
 	}
+		
 
-	// maximum column height heuristic: DONE
+	// maximum column height heuristic
 	public static class MaxHeight implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
@@ -246,7 +320,7 @@ public class PlayerSkeleton {
 			}
 			return maxColumnHeight;
 		}
-	}
-
+		
 }
 
+}
