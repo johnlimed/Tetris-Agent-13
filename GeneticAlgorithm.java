@@ -31,7 +31,7 @@ public class GeneticAlgorithm {
 	private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 		ArrayList<FeatureWeightPair> individual = new ArrayList<FeatureWeightPair>();
 		// all the feature functions we're using so far contribute negatively to happiness and so should be minimized,
-// 	hence their weights should be negative
+		// 	hence their weights should be negative
 		// for example, the presence of holes should decrease happiness
 		// not sure if -1.0 is a good lower bound for the initial population
 
@@ -39,6 +39,10 @@ public class GeneticAlgorithm {
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f)));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f)));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f)));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-1.0f, 0.0f)));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(-1.0f, 0.0f)));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f)));
+
 
 		return individual;
 	}
@@ -180,7 +184,7 @@ public class GeneticAlgorithm {
 
 	public static void main(String[] args) {
 		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
-		FitnessAssessment result =ga.trainFor(2); // number of generations to train for
+		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
 
