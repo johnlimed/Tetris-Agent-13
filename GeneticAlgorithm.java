@@ -1,8 +1,15 @@
 import java.util.*;
 // import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class GeneticAlgorithm {
+	private static final boolean isLogging = false;
+	private static final Logger logger = Logger.getLogger("GeneticAlgorithm");
 	public int populationSize;
 	public static float CROSSOVER_RATE = 0.1f;
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
@@ -178,11 +185,32 @@ public class GeneticAlgorithm {
 
 	}
 
+	public static void loggerInit() {
+		try {
+			FileHandler handler = new FileHandler("GeneticAlgorithm.txt");
+			handler.setFormatter(new SimpleFormatter());
+			LogManager.getLogManager().reset();
+			logger.addHandler(handler);
+			logger.log(Level.INFO, "logger initialized\n");
+		} catch (Exception e) {
+			/* error opening the log file - just get rid of logging so it won't 
+			 * print to the console while the user is running the program */
+			LogManager.getLogManager().reset();
+		}
+	}
+
+	private static void log(String msg) {
+		if (isLogging)
+		logger.log(Level.INFO, msg);
+	}
+	
 	public static void main(String[] args) {
+		loggerInit();
+	log("test");  	
 		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
-		FitnessAssessment result =ga.trainFor(2); // number of generations to train for
+		// FitnessAssessment result =ga.trainFor(2); // number of generations to train for
 		System.out.println("Training complete. The best individual is ");
-		System.out.println(result);
+		// System.out.println(result);
 
 	}
 
