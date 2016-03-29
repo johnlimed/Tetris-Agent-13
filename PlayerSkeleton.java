@@ -6,12 +6,14 @@ public class PlayerSkeleton {
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
+
+	private static long MAX_THREADS;
+	private static long RUNNING_THREADS=0;
 	private ArrayList<FeatureWeightPair> features;
 
 
 	public PlayerSkeleton() {
 		features = new ArrayList<FeatureWeightPair>();
-
 	}
 
 
@@ -56,9 +58,19 @@ public class PlayerSkeleton {
 		if (isNonLosingMoveFound == false)
 			return 0; // if we'll die anyway, it doesn't matter which move we do
 
+		if (RUNNING_THREADS<MAX_THREADS) {
+            long freeThreads = MAX_THREADS - RUNNING_THREADS;
+            for(int i=0; i<freeThreads; i++) {
+                Slave freeSlave = new Slave();
+                freeSlave.start();
+                RUNNING_THREADS++;
+            }
+        }
+
+
 		// now see if we can find better moves
 		for (int move = bestMove; move < legalMoves.length; move++) {
-			ImprovedState resultingState = currentState.tryMove(move);
+            ImprovedState resultingState = currentState.tryMove(move);
 			if (resultingState.hasLost() == false) {
 				float utility = evaluate(resultingState);
 
@@ -124,6 +136,8 @@ public class PlayerSkeleton {
 	}
 
 	public static void main(String[] args) {
+        MAX_THREADS = Runtime.getRuntime().availableProcessors();
+        System.out.println("number of processors: " + MAX_THREADS);
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
