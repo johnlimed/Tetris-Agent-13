@@ -18,6 +18,7 @@ public class GeneticAlgorithm {
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
 	ArrayList<ArrayList<FeatureWeightPair>> population;
+	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
 
@@ -25,6 +26,7 @@ public class GeneticAlgorithm {
 		rng = new Random();
 		player = new PlayerSkeleton();
 		population = new ArrayList<ArrayList<FeatureWeightPair>>(populationSize);
+		fitnessResults = new ArrayList<FitnessAssessment>(populationSize);
 
 		for (int i = 0; i < populationSize; i++) {
 			population.add(generateRandomIndividual());
@@ -101,13 +103,23 @@ public class GeneticAlgorithm {
 		for (int generation = 0; generation < generations; generation++) {
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
+			
+			// compute the fitness of everyone 
+			fitnessResults.clear(); // clear the results from previous population
+			for (ArrayList<FeatureWeightPair> individual : population)
+				fitnessResults.add(assessFitness(individual));
+			
+			Collections.sort(fitnessResults);
+			System.out.println("The best individual this generation is ");
+			System.out.println(fitnessResults.get(fitnessResults.size() - 1));
+			
 			population = reproduce();
 			log("population after reproduction:");
 			logPopulation();
 			//System.out.println(assessFitness(findBestIndividual()));
 		}
 
-		return assessFitness(findBestIndividual());
+		return fitnessResults.get(fitnessResults.size() - 1);
 	}
 
 	// reproduces children
@@ -124,9 +136,9 @@ public class GeneticAlgorithm {
 
 		for (int i = 0; i<iterations-1; i++) {
 			// find 2 parents to mate
-			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE));
-			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE));
-
+			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
+			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
+			
 			if (isLogging)
 				log("mating " + getIndividualAsStr(child1) + " with " + getIndividualAsStr(child2));
 
@@ -168,7 +180,7 @@ public class GeneticAlgorithm {
 		for (int individual = 1; individual < population.size(); individual++) {
 			FitnessAssessment fitness = assessFitness(population.get(individual));
 
-			if (bestFitness.compareTo(fitness)  > 0) {
+			if (bestFitness.compareTo(fitness) < 0) {
 				bestFitness = fitness;
 				bestIndex = individual;
 			}
@@ -184,7 +196,7 @@ public class GeneticAlgorithm {
 		int lowest = player.playGame(false);
 		int highest = lowest, total = lowest;
 
-		for (int game = 1; game < NUM_GAMES; game++) {
+		for (int game = 0; game < NUM_GAMES; game++) {
 			int score = player.playGame(false);
 			total += score;
 
@@ -196,26 +208,27 @@ public class GeneticAlgorithm {
 		return new FitnessAssessment(individual, lowest, average, highest);
 	}
 
-	private ArrayList<FeatureWeightPair> tournamentSelection(int tournamentSize) {
+	// returns the fitness assessment of the individual being selected through tournament selection
+	private FitnessAssessment tournamentSelection(int tournamentSize) {
 		int best = randomInt(0, population.size());
-		FitnessAssessment bestFitness = assessFitness(population.get(best));
+		FitnessAssessment bestFitness = fitnessResults.get(best);
 
 		for (int i = 2; i <= tournamentSize; i++) {
-			int next = randomInt(0, population.size());
+			int next = randomInt(0, fitnessResults.size());
 
 			// ensure that the next individual selected is different from the existing best
 			while (best == next)
-				next = randomInt(0, population.size());
+				next = randomInt(0, fitnessResults.size());
 
-			FitnessAssessment fitness = assessFitness(population.get(next));
+			FitnessAssessment fitness = fitnessResults.get(next);
 
-			if (bestFitness.compareTo(fitness)  > 0) {
+			if (bestFitness.compareTo(fitness) < 0) {
 				bestFitness = fitness;
 				best = next;
 			}
 		}
 
-		return population.get(best);
+		return bestFitness;
 	}
 
 	// crosses over 2 individuals using uniform crossover
@@ -263,6 +276,7 @@ public class GeneticAlgorithm {
 		FitnessAssessment result =ga.trainFor(5); // number of generations to train for
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
+
 	}
 
 	// stores information about the fitness of an individual
@@ -279,24 +293,24 @@ public class GeneticAlgorithm {
 		}
 
 		public int compareTo(FitnessAssessment other) {
-			if (other.average < average)
+			if (other.average > average)
 				return -1;
 
-			if (other.average > average)
+			if (other.average < average)
 				return 1;
 
 			// tiebreak using lowest
-			if (other.lowest < lowest)
+			if (other.lowest > lowest)
 				return -1;
 
-			if (other.lowest > lowest)
+			if (other.lowest < lowest)
 				return 1;
 
 			// then highest
-			if (other.highest < highest)
+			if (other.highest > highest)
 				return -1;
 
-			if (other.highest > highest)
+			if (other.highest < highest)
 				return 1;
 
 			return 0;
