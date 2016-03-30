@@ -1,7 +1,7 @@
 import java.util.*;
+import java.util.concurrent.Callable;
 
-
-public class PlayerSkeleton {
+public class PlayerSkeleton implements Callable<Integer> {
 
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
@@ -11,9 +11,7 @@ public class PlayerSkeleton {
 
 	public PlayerSkeleton() {
 		features = new ArrayList<FeatureWeightPair>();
-
 	}
-
 
 	public void setFeatureWeightPairs(ArrayList<FeatureWeightPair> features) {
 		this.features = features;
@@ -31,6 +29,11 @@ public class PlayerSkeleton {
 		return sum;
 	}
 
+	public Integer call() {
+		return playGame(false);
+    }
+	
+	
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
 		// s is the current state
@@ -76,8 +79,8 @@ public class PlayerSkeleton {
 
 		Random rand = new Random(); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
 		int randMove = rand.nextInt(legalMoves.length); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
-*/
-		
+		 */
+
 		/* For debugging: to see what is stored in legalMoves
 
 		for (int i = 0; i < legalMoves.length; i++) {
@@ -90,9 +93,9 @@ public class PlayerSkeleton {
 		for (int i = 0; i < legalMoves.length; i++) {
 			System.out.println("legalMoves[][] length: " + legalMoves[i].length);
 		}
-		*/
+		 */
 
-// 		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
+		// 		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
 	}
 
 	// plays a game , returning the number of rows completed
@@ -151,10 +154,10 @@ public class PlayerSkeleton {
 			}
 		}
 		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
-		*/
+		 */
 
 	}
-
+	
 
 	// function to return numCompleteLines: unsure
 	private static int numCompleteLines(State s) {
@@ -207,9 +210,9 @@ public class PlayerSkeleton {
 
 			return new Float(sumOfPitDepth);
 		}
-		
+
 	}
-	
+
 	// Returns the average height across the columns
 	public static class MeanHeightDiff implements FeatureFunction {
 		@Override
@@ -221,17 +224,17 @@ public class PlayerSkeleton {
 			}
 			return (float) avgHeight/State.COLS;
 		}
-		
-		}
-	
+
+	}
+
 	public static class NumRowsCleared implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s)  {
 			return new Float(s.getRowsCleared());
 		}
-		
+
 	}
-	
+
 	// returns aggregate height for all columns
 	public static class AggHeight implements FeatureFunction {
 		@Override
@@ -246,8 +249,8 @@ public class PlayerSkeleton {
 
 			return (float) aggHeight;
 		}
-		
-		}
+
+	}
 
 	// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
 	public static class NumHoles implements FeatureFunction {
@@ -268,7 +271,7 @@ public class PlayerSkeleton {
 			// System.out.println("numHoles: " + numHoles);
 			return numHoles;
 		}
-		
+
 	}
 
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
@@ -287,7 +290,7 @@ public class PlayerSkeleton {
 			return bumpiness;
 		}
 	}
-		
+
 
 	// maximum column height heuristic
 	public static class MaxHeight implements FeatureFunction {
@@ -306,8 +309,8 @@ public class PlayerSkeleton {
 			}
 			return maxColumnHeight;
 		}
-		
-}
+
+	}
 
 	// computes total row transitions. Row transitions happen when an empty cell is adjacent to a filled cell and vice versa
 	public static class RowTransitions implements FeatureFunction {
@@ -315,17 +318,17 @@ public class PlayerSkeleton {
 		public float evaluate(ImprovedState s) {
 			int nRowTransitions = 0;
 			int[][] field = s.getField();
-			
+
 			for (int r=0; r<State.ROWS; r++)
 				for (int c=0; c<State.COLS-1; c++) {
 					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c+1] == 0;
-					
+
 					if ((isCurEmpty && isNextEmpty == false) || (isCurEmpty ==false && isNextEmpty))
 						nRowTransitions++;
 				}
-			
+
 			return nRowTransitions;
 		}
 	}
-	
+
 }
