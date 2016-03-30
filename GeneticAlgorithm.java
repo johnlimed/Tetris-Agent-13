@@ -14,6 +14,7 @@ public class GeneticAlgorithm {
 	public static float CROSSOVER_RATE = 0.5f;
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
+	public static float GENERATION_REPLACEMENT_RATE = 0.3f; // for example, 0.3 means the weakest 30% of the population are replaced by new offspring
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
@@ -122,9 +123,18 @@ log(str);
 
 	// reproduces children
 	private ArrayList<ArrayList<FeatureWeightPair>> reproduce() {
-		int iterations = population.size()/2;
+		int cutoffIndex = (int) (GENERATION_REPLACEMENT_RATE * population.size());
+		assert(cutoffIndex%2 == 0);
+		// after the fitnessResults array is sorted, the cutoff index determines which portions of the population get to live and which are replaced
+		// this is also the count on the number of individuals to be replaced
+		
+		int iterations = cutoffIndex / 2; // how many we need to produce replacements
 		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
 
+		// copy the portion of the population with indices >= cutoffIndex over
+		for (int i = cutoffIndex; i < fitnessResults.size(); i++)
+			children.add(fitnessResults.get(i).individual);
+		
 		for (int i = 0; i<iterations; i++) {
 			// find 2 parents to mate
 			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
@@ -273,7 +283,7 @@ else
 		loggerInit();
 	
 		GeneticAlgorithm ga = new GeneticAlgorithm(6); // population size
-		FitnessAssessment result =ga.trainFor(20); // number of generations to train for
+		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
 		System.out.println("Training complete. The best individual is "); 
 System.out.println(result);
 	
