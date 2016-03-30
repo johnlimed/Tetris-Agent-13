@@ -14,13 +14,16 @@ public class GeneticAlgorithm {
 	public static float CROSSOVER_RATE = 0.5f;
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
-	public static float GENERATION_REPLACEMENT_RATE = 0.05f; // for example, 0.3 means the weakest 30% of the population are replaced by new offspring
+	public static final int NUM_ELITES= 2; // number of elites to keep
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
 
 	public GeneticAlgorithm(int populationSize) {
+		this.populationSize = populationSize;
+		assert(NUM_ELITES >= 0 && NUM_ELITES <= populationSize);
+		assert ((populationSize - NUM_ELITES) % 2 == 0);
 		rng = new Random();
 		player = new PlayerSkeleton();
 		population = new ArrayList<ArrayList<FeatureWeightPair>>(populationSize);
@@ -106,10 +109,15 @@ log(str);
 			
 			// compute the fitness of everyone 
 			fitnessResults.clear(); // clear the results from previous population
+			
 			for (ArrayList<FeatureWeightPair> individual : population)
 				fitnessResults.add(assessFitness(individual));
 			
 			Collections.sort(fitnessResults);
+			
+			log("fitness scores for this generation:");
+			for (int j=0; j<fitnessResults.size(); j++)
+				log(fitnessResults.get(j).toString());
 			
 			System.out.println("The best individual this generation is ");
 			System.out.println(fitnessResults.get(fitnessResults.size() - 1));
@@ -124,17 +132,15 @@ log(str);
 
 	// reproduces children
 	private ArrayList<ArrayList<FeatureWeightPair>> reproduce() {
-		int cutoffIndex = (int) (GENERATION_REPLACEMENT_RATE * population.size());
-		assert(cutoffIndex%2 == 0);
-		// after the fitnessResults array is sorted, the cutoff index determines which portions of the population get to live and which are replaced
-		// this is also the count on the number of individuals to be replaced
 		
-		int iterations = cutoffIndex / 2; // how many we need to produce replacements
+		// after the fitnessResults array is sorted, copy the best NUM_ELITES individuals
+		int iterations = (population.size() - NUM_ELITES) / 2; // how many we need to produce replacements
+
 		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
 
-		// copy the portion of the population with indices >= cutoffIndex over
-		for (int i = cutoffIndex; i < fitnessResults.size(); i++)
-			children.add(fitnessResults.get(i).individual);
+		// copy elites which should be at the end of the array after sorting
+		for (int i = 0; i < NUM_ELITES; i++)
+			children.add(fitnessResults.get(fitnessResults.size() - 1 - i).individual);
 		
 		for (int i = 0; i<iterations; i++) {
 			// find 2 parents to mate
@@ -158,7 +164,7 @@ log(str);
 			children.add(child1);
 			children.add(child2);
 		}
-
+		
 		return children;
 	}
 
@@ -180,7 +186,7 @@ log(str);
 		for (int individual = 1; individual < population.size(); individual++) {
 			FitnessAssessment fitness = assessFitness(population.get(individual));
 
-			if (bestFitness.compareTo(fitness)  > 0) {
+			if (fitness.compareTo(bestFitness)  > 0) {
 				bestFitness = fitness;
 				bestIndex = individual;
 			}
@@ -221,7 +227,7 @@ log(str);
 
 			FitnessAssessment fitness = fitnessResults.get(next);
 
-			if (bestFitness.compareTo(fitness)  > 0) {
+			if (fitness.compareTo(bestFitness)  > 0) {
 				bestFitness = fitness;
 				best = next;
 			}
