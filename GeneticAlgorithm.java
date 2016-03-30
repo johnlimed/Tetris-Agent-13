@@ -14,7 +14,7 @@ public class GeneticAlgorithm {
 	public static float CROSSOVER_RATE = 0.5f;
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
-	public static float GENERATION_REPLACEMENT_RATE = 0.3f; // for example, 0.3 means the weakest 30% of the population are replaced by new offspring
+	public static float GENERATION_REPLACEMENT_RATE = 0.05f; // for example, 0.3 means the weakest 30% of the population are replaced by new offspring
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
@@ -110,6 +110,7 @@ log(str);
 				fitnessResults.add(assessFitness(individual));
 			
 			Collections.sort(fitnessResults);
+			
 			System.out.println("The best individual this generation is ");
 			System.out.println(fitnessResults.get(fitnessResults.size() - 1));
 			
@@ -282,7 +283,7 @@ else
 	public static void main(String[] args) {
 		loggerInit();
 	
-		GeneticAlgorithm ga = new GeneticAlgorithm(6); // population size
+		GeneticAlgorithm ga = new GeneticAlgorithm(10); // population size
 		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
 		System.out.println("Training complete. The best individual is "); 
 System.out.println(result);
@@ -303,24 +304,24 @@ System.out.println(result);
 		}
 
 		public int compareTo(FitnessAssessment other) {
-			if (other.average < average)
+			if (average < other.average)
 				return -1;
 
-			if (other.average > average)
+			if (average > other.average)
 				return 1;
 
 			// tiebreak using lowest
-			if (other.lowest < lowest)
+			if (lowest < other.lowest)
 				return -1;
 
-			if (other.lowest > lowest)
+			if (lowest > other.lowest)
 				return 1;
 
 			// then highest
-			if (other.highest < highest)
+			if (highest < other.highest)
 				return -1;
 
-			if (other.highest > highest)
+			if (highest > other.highest)
 				return 1;
 
 			return 0;
