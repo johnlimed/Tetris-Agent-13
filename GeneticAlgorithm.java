@@ -1,6 +1,8 @@
-import java.io.FileWriter;
-import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 // import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.FileHandler;
@@ -9,20 +11,29 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-
 public class GeneticAlgorithm {
 	private static final boolean isLogging = true;
 	private static final Logger logger = Logger.getLogger("GeneticAlgorithm");
-	public int populationSize;
-	public static float CROSSOVER_RATE = 0.5f;
-	public static final int NUM_GAMES = 1; // number of games to run to assess fitness of an individual
-	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
+	public int populationSize = 0;
+	public float crossoverRate = 0.0f;
+	public int numGames = 0; // number of games to run to assess fitness of an individual
+	public float mutationSigma = 0.0f; // standard deviation for mutation
+	public int tournamentSize = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
+	public int numElites= 4; // number of numElites to keep
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
+	private ExecutorService service = Executors.newWorkStealingPool();
 
-	public GeneticAlgorithm(int populationSize) {
+	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
+		this.numElites = elites;
+		this.numGames = games;
+		this.mutationSigma = mutationSigma;
+		this.populationSize = populationSize;
+		this.tournamentSize = tournamentSize;
+		assert(numElites >= 0 && numElites <= populationSize);
+		assert ((populationSize - numElites) % 2 == 0);
 		rng = new Random();
 		player = new PlayerSkeleton();
 		population = new ArrayList<ArrayList<FeatureWeightPair>>(populationSize);
@@ -45,36 +56,35 @@ public class GeneticAlgorithm {
 		}
 		log(str);
 	}
-
+	
 	private String getIndividualAsStr(ArrayList<FeatureWeightPair> individual) {
 		String str = "";
-
+		
 		for (FeatureWeightPair f : individual) {
 			str += f.weight + ", ";
 		}
-
+		
 		return str;
 	}
-
+	
 	private String getIndividualAsStr(int i) {
 		return getIndividualAsStr(population.get(i));
 	}
-
+	
 	private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 		ArrayList<FeatureWeightPair> individual = new ArrayList<FeatureWeightPair>();
 		// all the feature functions we're using so far contribute negatively to happiness and so should be minimized,
 		// 	hence their weights should be negative
 		// for example, the presence of holes should decrease happiness
-		// not sure if -1.0 is a good lower bound for the initial population
 
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-0.2f, 0.2f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-0.3f, 0.1f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-0.2f, 0.1f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-2.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-2.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 2.0f), true)); // this increases happiness
-
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-3.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-3.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 3.0f), true)); // this increases happiness
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-3.0f, 0.0f), false));
 		return individual;
 	}
 
@@ -93,30 +103,35 @@ public class GeneticAlgorithm {
 	private float nextGaussian(float mu, float sigma) {
 		return mu + ((float) rng.nextGaussian() * sigma);
 	}
-
+	
 	// run the genetic algorithm for a specified number of generations
 	// returns fitness information for the best individual in the last generation
 	public FitnessAssessment trainFor(int generations) {
 		assert(generations > 0);
 		log("training for " + generations + " generations:");
-
+		
 		for (int generation = 0; generation < generations; generation++) {
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
-			
+
 			// compute the fitness of everyone 
 			fitnessResults.clear(); // clear the results from previous population
+
 			for (ArrayList<FeatureWeightPair> individual : population)
 				fitnessResults.add(assessFitness(individual));
-			
+
 			Collections.sort(fitnessResults);
+
+			log("fitness scores for this generation:");
+			for (int j=0; j<fitnessResults.size(); j++)
+				log(fitnessResults.get(j).toString());
+
 			System.out.println("The best individual this generation is ");
 			System.out.println(fitnessResults.get(fitnessResults.size() - 1));
-			
+
 			population = reproduce();
 			log("population after reproduction:");
 			logPopulation();
-			//System.out.println(assessFitness(findBestIndividual()));
 		}
 
 		return fitnessResults.get(fitnessResults.size() - 1);
@@ -124,21 +139,20 @@ public class GeneticAlgorithm {
 
 	// reproduces children
 	private ArrayList<ArrayList<FeatureWeightPair>> reproduce() {
-		int iterations = population.size()/2;
+		// after the fitnessResults array is sorted, copy the best numElites individuals
+		int iterations = (population.size() - numElites) / 2; // how many we need to produce replacements
+
 		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
 
-		ArrayList<FeatureWeightPair> fittestOfThePrevGen = findBestIndividual();
-		System.out.println("best indiv of previous gen is: "+ assessFitness(findBestIndividual()));
-		children.add(deepCopyIndividual(fittestOfThePrevGen));
+		// copy numElites which should be at the end of the array after sorting
+		for (int i = 0; i < numElites; i++)
+			children.add(fitnessResults.get(fitnessResults.size() - 1 - i).individual);
 
-		mutate(fittestOfThePrevGen);
-		children.add(deepCopyIndividual(fittestOfThePrevGen));
-
-		for (int i = 0; i<iterations-1; i++) {
+		for (int i = 0; i<iterations; i++) {
 			// find 2 parents to mate
-			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
-			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
-			
+			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(tournamentSize).individual);
+			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(tournamentSize).individual);
+
 			if (isLogging)
 				log("mating " + getIndividualAsStr(child1) + " with " + getIndividualAsStr(child2));
 
@@ -155,12 +169,11 @@ public class GeneticAlgorithm {
 
 			children.add(child1);
 			children.add(child2);
-
 		}
 
 		return children;
 	}
-	
+
 	// does a deep copy of an individual's weights
 	ArrayList<FeatureWeightPair> deepCopyIndividual(ArrayList<FeatureWeightPair> individual) {
 		ArrayList<FeatureWeightPair> copy = new ArrayList<FeatureWeightPair>(individual.size());
@@ -171,41 +184,56 @@ public class GeneticAlgorithm {
 		return copy;
 	}
 
-	// returns fitness information on the best individual
-	private ArrayList<FeatureWeightPair> findBestIndividual() {
-		int bestIndex = 0;
-		FitnessAssessment bestFitness = assessFitness(population.get(0));
-
-		System.out.println("start loop");
-		for (int individual = 1; individual < population.size(); individual++) {
-			FitnessAssessment fitness = assessFitness(population.get(individual));
-
-			if (bestFitness.compareTo(fitness) < 0) {
-				bestFitness = fitness;
-				bestIndex = individual;
-			}
-			//System.out.println(individual);
-		}
-
-		return population.get(bestIndex);
-	}
-
-	// returns information about the lowest, average and highest score on an individual after playing NUM_GAMES games, each game with random piece sequences
+	// returns information about the lowest, average and highest score on an individual after playing numGames games, each game with random piece sequences
 	private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual) {
-		player.setFeatureWeightPairs(individual);
-		int lowest = player.playGame(false);
-		int highest = lowest, total = lowest;
 
-		for (int game = 0; game < NUM_GAMES; game++) {
-			int score = player.playGame(false);
-			total += score;
+		ArrayList<Integer> scores = new ArrayList<>();
 
-			lowest = Math.min(lowest, score);
-			highest = Math.max(highest, score);
+		try{
+			PlayerSkeleton player1 = new PlayerSkeleton();
+			player1.setFeatureWeightPairs(individual);
+			Future<Integer> task1 = service.submit(player1);
+
+			PlayerSkeleton player2 = new PlayerSkeleton();
+			player2.setFeatureWeightPairs(individual);
+			Future<Integer> task2 = service.submit(player2);
+
+			PlayerSkeleton player3 = new PlayerSkeleton();
+			player3.setFeatureWeightPairs(individual);
+			Future<Integer> task3 = service.submit(player3);
+
+			PlayerSkeleton player4 = new PlayerSkeleton();
+			player4.setFeatureWeightPairs(individual);
+			Future<Integer> task4 = service.submit(player4);
+
+			PlayerSkeleton player5 = new PlayerSkeleton();
+			player5.setFeatureWeightPairs(individual);
+			Future<Integer> task5 = service.submit(player5);
+
+			scores.add(task1.get());
+			scores.add(task2.get());
+			scores.add(task3.get());
+			scores.add(task4.get());
+			scores.add(task5.get());
+
+		} catch (Exception e) {
 		}
 
-		float average = total * 1.0f / NUM_GAMES;
-		return new FitnessAssessment(individual, lowest, average, highest);
+		int lowest = scores.get(0);
+		int highest = lowest;
+		int sum = 0;
+
+		for (Integer score: scores) {
+			if (score > highest) {
+				highest = score;
+			}
+			if (score < lowest) {
+				lowest = score;
+			}
+			sum += score;
+		}
+
+		return new FitnessAssessment(individual, lowest, sum/5, highest);	//assuming numGames = 5
 	}
 
 	// returns the fitness assessment of the individual being selected through tournament selection
@@ -222,7 +250,7 @@ public class GeneticAlgorithm {
 
 			FitnessAssessment fitness = fitnessResults.get(next);
 
-			if (bestFitness.compareTo(fitness) < 0) {
+			if (fitness.compareTo(bestFitness)  > 0) {
 				bestFitness = fitness;
 				best = next;
 			}
@@ -234,7 +262,7 @@ public class GeneticAlgorithm {
 	// crosses over 2 individuals using uniform crossover
 	private void uniformCrossover(ArrayList<FeatureWeightPair> x, ArrayList<FeatureWeightPair> y) {
 		for (int i = 0; i < x.size(); i++) {
-			if (CROSSOVER_RATE >= randomFloat(0.0f, 1.0f)) {
+			if (crossoverRate >= randomFloat(0.0f, 1.0f)) {
 				// swap the genes on these 2 vectors
 				float temp = x.get(i).weight;
 				x.get(i).weight = y.get(i).weight;
@@ -246,7 +274,17 @@ public class GeneticAlgorithm {
 	// mutates an individual using the Gaussian Convolution algorithm
 	private void mutate(ArrayList<FeatureWeightPair> individual) {
 		for (int i = 0; i < individual.size(); i++) {
-			float n  = nextGaussian(0.0f, 1.0f); 
+			float n = 0.0f;
+			if (individual.get(i).increasesHappiness)
+				do {
+					n  = nextGaussian(0.0f, mutationSigma);
+				} while (individual.get(i).weight + n <= 0.0f);
+
+			else
+				do {
+					n  = nextGaussian(0.0f, mutationSigma);
+				} while (individual.get(i).weight + n >= 0.0f);
+
 			individual.get(i).weight += n;
 		}
 	}
@@ -271,16 +309,33 @@ public class GeneticAlgorithm {
 	}
 
 	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);
 		loggerInit();
-		long startTime = System.currentTimeMillis();
-		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
-		FitnessAssessment result =ga.trainFor(1); // number of generations to train for
-		long endTime   = System.currentTimeMillis();
-		long totalTime = endTime - startTime;
+		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0;
+		float mutationSigma = 0.0f, crossoverRate = 0.0f;
+        System.out.println("Enter parameters");
+        System.out.print("\nCrossover rate: ");
+        crossoverRate = sc.nextFloat();
+        System.out.print("\nNumber of elites (population size - elites should be even): ");
+        elites = sc.nextInt();
+        System.out.print("\nnumber of games per individual: ");
+        games = sc.nextInt();
+        System.out.print("\nstandard deviation for mutation: ");
+        mutationSigma = sc.nextFloat();
+        System.out.print("Population size: ");
+        populationSize = sc.nextInt();
+		System.out.print("\nTournament size: ");
+		tournamentSize = sc.nextInt();
+
+        long startTime = System.currentTimeMillis();
+		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
+		FitnessAssessment result =ga.trainFor(200); // number of generations to train for
+        long endTime   = System.currentTimeMillis();
+        long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
-		System.out.println("GA took: "+totalTime+"ms");
-
+        System.out.println("GA took: "+totalTime+"ms");
+        sc.close();
 	}
 
 	// stores information about the fitness of an individual
@@ -297,24 +352,24 @@ public class GeneticAlgorithm {
 		}
 
 		public int compareTo(FitnessAssessment other) {
-			if (other.average > average)
+			if (average < other.average)
 				return -1;
 
-			if (other.average < average)
+			if (average > other.average)
 				return 1;
 
 			// tiebreak using lowest
-			if (other.lowest > lowest)
+			if (lowest < other.lowest)
 				return -1;
 
-			if (other.lowest < lowest)
+			if (lowest > other.lowest)
 				return 1;
 
 			// then highest
-			if (other.highest > highest)
+			if (highest < other.highest)
 				return -1;
 
-			if (other.highest < highest)
+			if (highest > other.highest)
 				return 1;
 
 			return 0;

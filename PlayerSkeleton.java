@@ -1,9 +1,10 @@
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class PlayerSkeleton {
+public class PlayerSkeleton implements Callable<Integer> {
 
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
@@ -20,8 +21,11 @@ public class PlayerSkeleton {
 		this.features = features;
 	}
 
-    // returns  h(n) for the given state
-	public float evaluate(ImprovedState s) {
+	// returns  h(n) for the given state
+	private float evaluate(ImprovedState s) {
+		if (s.hasLost())
+			return Float.NEGATIVE_INFINITY;
+
 		float sum = 0.0f;
 
 		for (int i=0; i<features.size(); i++) {
@@ -31,14 +35,20 @@ public class PlayerSkeleton {
 		return sum;
 	}
 
+	public Integer call() {
+		return playGame(false);
+    }
+
+
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
 		// s is the current state
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
 
-//		boolean isNonLosingMoveFound = false;
+
+        // boolean isNonLosingMoveFound = false;
         int bestMove = 0;
-        float bestValue =0.0f;
+        float bestValue = Float.NEGATIVE_INFINITY;;
         Collection<Future<Float>> results = new ArrayList<Future<Float>>();
         Float[] value = new Float[legalMoves.length];
         ImprovedState currentState = new ImprovedState(s);
@@ -58,7 +68,7 @@ public class PlayerSkeleton {
         }
         bestValue = value[0];
         for (int i=0; i<value.length; i++) {
-//            System.out.println("value: " + value[i] + " move: " + i);
+            // System.out.println("value: " + value[i] + " move: " + i);
             if (value[i] > bestValue) {
                 bestValue = value[i];
                 bestMove = i;
@@ -66,7 +76,7 @@ public class PlayerSkeleton {
         }
 
         // serial implementation
-		// find the first legal move corresponding to a non-losing situation, and assume that to be the best move
+        // find the first legal move corresponding to a non-losing situation, and assume that to be the best move
 //		for (int move = 0; move < legalMoves.length && !isNonLosingMoveFound; move++) {
 //			ImprovedState resultingState = currentState.tryMove(move);
 //			isNonLosingMoveFound = !resultingState.hasLost();
@@ -88,6 +98,21 @@ public class PlayerSkeleton {
 //				}
 //			}
 //		}
+        // new serial
+//		ImprovedState currentState = new ImprovedState(s);
+//		int bestMove = 0;
+//		float bestValue = Float.NEGATIVE_INFINITY;
+//
+//        for (int move = 0; move < legalMoves.length; move++) {
+//            ImprovedState resultingState = currentState.tryMove(move);
+//            float utility = evaluate(resultingState);
+//
+//            if (utility > bestValue) {
+//                bestValue = utility;
+//                bestMove = move;
+//            }
+//        }
+
 		return bestMove;
 	}
 
@@ -148,8 +173,7 @@ public class PlayerSkeleton {
 			}
 		}
 		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
-		*/
-
+		 */
 	}
 
 
@@ -204,9 +228,8 @@ public class PlayerSkeleton {
 
 			return (float) sumOfPitDepth;
 		}
-		
 	}
-	
+
 	// Returns the average height across the columns
 	public static class MeanHeightDiff implements FeatureFunction {
 		@Override
@@ -225,9 +248,8 @@ public class PlayerSkeleton {
 		public float evaluate(ImprovedState s)  {
 			return (float) s.getRowsCleared();
 		}
-		
 	}
-	
+
 	// returns aggregate height for all columns
 	public static class AggHeight implements FeatureFunction {
 		@Override
@@ -281,7 +303,6 @@ public class PlayerSkeleton {
 			return bumpiness;
 		}
 	}
-		
 
 	// maximum column height heuristic
 	public static class MaxHeight implements FeatureFunction {
@@ -300,15 +321,14 @@ public class PlayerSkeleton {
 			}
 			return maxColumnHeight;
 		}
-		
-}
+    }
 	// computes total row transitions. Row transitions happen when an empty cell is adjacent to a filled cell and vice versa
 	public static class RowTransitions implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
 			int nRowTransitions = 0;
 			int[][] field = s.getField();
-			
+
 			for (int r=0; r<State.ROWS; r++)
 				for (int c=0; c<State.COLS-1; c++) {
 					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c+1] == 0;
@@ -316,7 +336,6 @@ public class PlayerSkeleton {
 					if ((isCurEmpty && !isNextEmpty) || (!isCurEmpty && isNextEmpty))
 						nRowTransitions++;
 				}
-			
 			return nRowTransitions;
 		}
 	}
