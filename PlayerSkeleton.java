@@ -1,5 +1,7 @@
 import java.util.*;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class PlayerSkeleton {
 
@@ -7,27 +9,25 @@ public class PlayerSkeleton {
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
 
+    private ExecutorService pickMoveThreadPool = Executors.newWorkStealingPool();
 	private ArrayList<FeatureWeightPair> features;
-
 
 	public PlayerSkeleton() {
 		features = new ArrayList<FeatureWeightPair>();
 	}
 
-
 	public void setFeatureWeightPairs(ArrayList<FeatureWeightPair> features) {
 		this.features = features;
 	}
 
-	// returns  h(n) for the given state
-	private float evaluate(ImprovedState s) {
+    // returns  h(n) for the given state
+	public float evaluate(ImprovedState s) {
 		float sum = 0.0f;
 
 		for (int i=0; i<features.size(); i++) {
 			FeatureWeightPair f = features.get(i);
 			sum += f.feature.evaluate(s) * f.weight;
 		}
-
 		return sum;
 	}
 
@@ -36,69 +36,64 @@ public class PlayerSkeleton {
 		// s is the current state
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
 
-		ImprovedState currentState = new ImprovedState(s);
+//		boolean isNonLosingMoveFound = false;
+        int bestMove = 0;
+        float bestValue =0.0f;
+        Collection<Future<Float>> results = new ArrayList<Future<Float>>();
+        Float[] value = new Float[legalMoves.length];
+        ImprovedState currentState = new ImprovedState(s);
+        for (int move=0; move<legalMoves.length; move++) {
+            Slave slavePickMove = new Slave(currentState, move, features);
+            results.add(pickMoveThreadPool.submit(slavePickMove));
+        }
+        int counter=0;
+        for(Future<Float> result: results) {
+            try {
+                value[counter] = result.get();
+            } catch (Exception e) {
+                System.out.println("Error caught");
+            }
+            counter++;
+        }
+        bestValue = value[0];
+        for (int i=0; i<value.length; i++) {
+//            System.out.println("value: " + value[i] + " move: " + i);
+            if (value[i] > bestValue) {
+                bestValue = value[i];
+                bestMove = i;
+            }
+        }
 
-		int bestMove = 0;
-		boolean isNonLosingMoveFound = false;
-		float bestValue = 0.0f;
-
+        // serial implementation
 		// find the first legal move corresponding to a non-losing situation, and assume that to be the best move
-		for (int move = 0; move < legalMoves.length && isNonLosingMoveFound == false; move++) {
-			ImprovedState resultingState = currentState.tryMove(move);
-			isNonLosingMoveFound = !resultingState.hasLost();
-
-			if (isNonLosingMoveFound) {
-				bestMove = move;
-				bestValue = evaluate(resultingState);
-			}
-		}
-
-		if (isNonLosingMoveFound == false)
-			return 0; // if we'll die anyway, it doesn't matter which move we do
-
-		// now see if we can find better moves
-		for (int move = bestMove; move < legalMoves.length; move++) {
-            ImprovedState resultingState = currentState.tryMove(move);
-			if (resultingState.hasLost() == false) {
-				float utility = evaluate(resultingState);
-
-				if (utility > bestValue) {
-					bestValue = utility;
-					bestMove = move;
-				}
-			}
-		}
-
+//		for (int move = 0; move < legalMoves.length && !isNonLosingMoveFound; move++) {
+//			ImprovedState resultingState = currentState.tryMove(move);
+//			isNonLosingMoveFound = !resultingState.hasLost();
+//			if (isNonLosingMoveFound) {
+//				bestMove = move;
+//				bestValue = evaluate(resultingState);
+//			}
+//		}
+//		if (!isNonLosingMoveFound)
+//			return 0; // if we'll die anyway, it doesn't matter which move we do
+        // now see if we can find better moves
+//		for (int move = bestMove; move < legalMoves.length; move++) {
+//            ImprovedState resultingState = currentState.tryMove(move);
+//			if (!resultingState.hasLost()) {
+//				float utility = evaluate(resultingState);
+//				if (utility > bestValue) {
+//					bestValue = utility;
+//					bestMove = move;
+//				}
+//			}
+//		}
 		return bestMove;
-
-		/* 
-		System.out.println(s.getNextPiece());
-
-		Random rand = new Random(); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
-		int randMove = rand.nextInt(legalMoves.length); // just for fun, better than the original given by prof. Comment away to see the original simulation given by prof
-*/
-		
-		/* For debugging: to see what is stored in legalMoves
-
-		for (int i = 0; i < legalMoves.length; i++) {
-			for (int j = 0; j < legalMoves[i].length; j++) {
-				System.out.println("legalMoves[" + i + "][" + j + "]: " + legalMoves[i][j]);
-			}
-		}
-
-		System.out.println("legalMoves[] length: " + legalMoves.length);
-		for (int i = 0; i < legalMoves.length; i++) {
-			System.out.println("legalMoves[][] length: " + legalMoves[i].length);
-		}
-		*/
-
-// 		return randMove; // return moveNumber in legalMoves[moveNum][orient/slot]
 	}
 
 	// plays a game , returning the number of rows completed
 	// use the setFeatureWeightPairs function first
 	public int playGame(boolean draw) {
-		assert (features.isEmpty() == false); // must set some features to use first
+		assert (!features.isEmpty()); // must set some features to use first
 		State s = new State();
 
 		if (draw)
@@ -136,7 +131,7 @@ public class PlayerSkeleton {
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
-		System.out.println("You have completed "+p.playGame(true) +" rows.");
+		System.out.println("You have completed "+p.playGame(false) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println(totalTime);
@@ -209,7 +204,7 @@ public class PlayerSkeleton {
 				sumOfPitDepth += heightDiff;
 			}
 
-			return new Float(sumOfPitDepth);
+			return (float) sumOfPitDepth;
 		}
 		
 	}
@@ -225,13 +220,12 @@ public class PlayerSkeleton {
 			}
 			return (float) avgHeight/State.COLS;
 		}
-		
-		}
+    }
 	
 	public static class NumRowsCleared implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s)  {
-			return new Float(s.getRowsCleared());
+			return (float) s.getRowsCleared();
 		}
 		
 	}
@@ -250,8 +244,7 @@ public class PlayerSkeleton {
 
 			return (float) aggHeight;
 		}
-		
-		}
+    }
 
 	// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
 	public static class NumHoles implements FeatureFunction {
@@ -272,7 +265,6 @@ public class PlayerSkeleton {
 			// System.out.println("numHoles: " + numHoles);
 			return numHoles;
 		}
-		
 	}
 
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
@@ -323,7 +315,7 @@ public class PlayerSkeleton {
 				for (int c=0; c<State.COLS-1; c++) {
 					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c+1] == 0;
 					
-					if ((isCurEmpty && isNextEmpty == false) || (isCurEmpty ==false && isNextEmpty))
+					if ((isCurEmpty && !isNextEmpty) || (!isCurEmpty && isNextEmpty))
 						nRowTransitions++;
 				}
 			
