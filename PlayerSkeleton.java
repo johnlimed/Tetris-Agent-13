@@ -52,6 +52,7 @@ public class PlayerSkeleton {
                 value[counter] = result.get();
             } catch (Exception e) {
                 System.out.println("Error caught");
+                pickMoveThreadPool.shutdown();
             }
             counter++;
         }
@@ -95,13 +96,11 @@ public class PlayerSkeleton {
 	public int playGame(boolean draw) {
 		assert (!features.isEmpty()); // must set some features to use first
 		State s = new State();
-
 		if (draw)
 			new TFrame(s);
 
 		while(!s.hasLost()) {
 			s.makeMove(pickMove(s,s.legalMoves()));
-
 			if (draw) {
 				s.draw();
 				s.drawNext(0,0);
@@ -112,7 +111,6 @@ public class PlayerSkeleton {
 					e.printStackTrace();
 				}
 			}
-
 		}
 
 		return s.getRowsCleared();
@@ -134,7 +132,7 @@ public class PlayerSkeleton {
 		System.out.println("You have completed "+p.playGame(false) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
-		System.out.println(totalTime);
+		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
 		/* 
 		State s = new State();
 		new TFrame(s);

@@ -168,7 +168,6 @@ public class State {
 	private int randomPiece() {
 		return (int)(Math.random()*N_PIECES);
 	}
-	
 
 
 	

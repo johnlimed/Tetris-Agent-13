@@ -15,7 +15,7 @@ public class GeneticAlgorithm {
 	private static final Logger logger = Logger.getLogger("GeneticAlgorithm");
 	public int populationSize;
 	public static float CROSSOVER_RATE = 0.5f;
-	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
+	public static final int NUM_GAMES = 1; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
@@ -272,10 +272,14 @@ public class GeneticAlgorithm {
 
 	public static void main(String[] args) {
 		loggerInit();
+		long startTime = System.currentTimeMillis();
 		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
-		FitnessAssessment result =ga.trainFor(5); // number of generations to train for
+		FitnessAssessment result =ga.trainFor(1); // number of generations to train for
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
+		System.out.println("GA took: "+totalTime+"ms");
 
 	}
 
