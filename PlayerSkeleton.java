@@ -312,5 +312,22 @@ public class PlayerSkeleton {
 		}
 		
 }
-
+	// computes total row transitions. Row transitions happen when an empty cell is adjacent to a filled cell and vice versa
+	public static class RowTransitions implements FeatureFunction {
+		@Override
+		public float evaluate(ImprovedState s) {
+			int nRowTransitions = 0;
+			int[][] field = s.getField();
+			
+			for (int r=0; r<State.ROWS; r++)
+				for (int c=0; c<State.COLS-1; c++) {
+					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c+1] == 0;
+					
+					if ((isCurEmpty && isNextEmpty == false) || (isCurEmpty ==false && isNextEmpty))
+						nRowTransitions++;
+				}
+			
+			return nRowTransitions;
+		}
+	}
 }
