@@ -7,8 +7,6 @@ public class PlayerSkeleton {
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
 
-	private static long MAX_THREADS;
-	private static long RUNNING_THREADS=0;
 	private ArrayList<FeatureWeightPair> features;
 
 
@@ -126,8 +124,7 @@ public class PlayerSkeleton {
 	}
 
 	public static void main(String[] args) {
-        MAX_THREADS = Runtime.getRuntime().availableProcessors();
-        System.out.println("number of processors: " + MAX_THREADS);
+		long startTime = System.currentTimeMillis();
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
@@ -140,6 +137,9 @@ public class PlayerSkeleton {
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
 		System.out.println("You have completed "+p.playGame(true) +" rows.");
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
+		System.out.println(totalTime);
 		/* 
 		State s = new State();
 		new TFrame(s);
