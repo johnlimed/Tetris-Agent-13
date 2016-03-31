@@ -58,16 +58,6 @@ public class PlayerSkeleton {
 		if (isNonLosingMoveFound == false)
 			return 0; // if we'll die anyway, it doesn't matter which move we do
 
-		if (RUNNING_THREADS<MAX_THREADS) {
-            long freeThreads = MAX_THREADS - RUNNING_THREADS;
-            for(int i=0; i<freeThreads; i++) {
-                Slave freeSlave = new Slave();
-                freeSlave.start();
-                RUNNING_THREADS++;
-            }
-        }
-
-
 		// now see if we can find better moves
 		for (int move = bestMove; move < legalMoves.length; move++) {
             ImprovedState resultingState = currentState.tryMove(move);
