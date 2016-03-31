@@ -14,21 +14,26 @@ import java.util.logging.SimpleFormatter;
 public class GeneticAlgorithm {
 	private static final boolean isLogging = true;
 	private static final Logger logger = Logger.getLogger("GeneticAlgorithm");
-	public int populationSize;
-	public static float CROSSOVER_RATE = 0.5f;
-	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
-	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
-	public static final int NUM_ELITES= 4; // number of elites to keep
+	public int populationSize = 0;
+	public float crossoverRate = 0.0f;
+	public int numGames = 0; // number of games to run to assess fitness of an individual
+	public float mutationSigma = 0.0f; // standard deviation for mutation
+	public int tournamentSize = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
+	public int numElites= 4; // number of numElites to keep
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
 	private ExecutorService service = Executors.newWorkStealingPool();
 
-	public GeneticAlgorithm(int populationSize) {
+	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
+		this.numElites = elites;
+		this.numGames = games;
+		this.mutationSigma = mutationSigma;
 		this.populationSize = populationSize;
-		assert(NUM_ELITES >= 0 && NUM_ELITES <= populationSize);
-		assert ((populationSize - NUM_ELITES) % 2 == 0);
+		this.tournamentSize = tournamentSize;
+		assert(numElites >= 0 && numElites <= populationSize);
+		assert ((populationSize - numElites) % 2 == 0);
 		rng = new Random();
 		player = new PlayerSkeleton();
 		population = new ArrayList<ArrayList<FeatureWeightPair>>(populationSize);
@@ -137,19 +142,19 @@ public class GeneticAlgorithm {
 
 	// reproduces children
 	private ArrayList<ArrayList<FeatureWeightPair>> reproduce() {
-		// after the fitnessResults array is sorted, copy the best NUM_ELITES individuals
-		int iterations = (population.size() - NUM_ELITES) / 2; // how many we need to produce replacements
+		// after the fitnessResults array is sorted, copy the best numElites individuals
+		int iterations = (population.size() - numElites) / 2; // how many we need to produce replacements
 
 		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
 
-		// copy elites which should be at the end of the array after sorting
-		for (int i = 0; i < NUM_ELITES; i++)
+		// copy numElites which should be at the end of the array after sorting
+		for (int i = 0; i < numElites; i++)
 			children.add(fitnessResults.get(fitnessResults.size() - 1 - i).individual);
 	
 		for (int i = 0; i<iterations; i++) {
 			// find 2 parents to mate
-			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
-			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(TOURNAMENT_SIZE).individual);
+			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(tournamentSize).individual);
+			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(tournamentSize).individual);
 
 			if (isLogging)
 				log("mating " + getIndividualAsStr(child1) + " with " + getIndividualAsStr(child2));
@@ -182,7 +187,7 @@ public class GeneticAlgorithm {
 		return copy;
 	}
 
-	// returns information about the lowest, average and highest score on an individual after playing NUM_GAMES games, each game with random piece sequences
+	// returns information about the lowest, average and highest score on an individual after playing numGames games, each game with random piece sequences
 	private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual) {
 		
 		ArrayList<Integer> scores = new ArrayList<>();		
@@ -260,7 +265,7 @@ public class GeneticAlgorithm {
 	// crosses over 2 individuals using uniform crossover
 	private void uniformCrossover(ArrayList<FeatureWeightPair> x, ArrayList<FeatureWeightPair> y) {
 		for (int i = 0; i < x.size(); i++) {
-			if (CROSSOVER_RATE >= randomFloat(0.0f, 1.0f)) {
+			if (crossoverRate >= randomFloat(0.0f, 1.0f)) {
 				// swap the genes on these 2 vectors
 				float temp = x.get(i).weight;
 				x.get(i).weight = y.get(i).weight;
@@ -275,12 +280,12 @@ public class GeneticAlgorithm {
 			float n = 0.0f;
 			if (individual.get(i).increasesHappiness)
 				do {
-					n  = nextGaussian(0.0f, 0.2f); 
+					n  = nextGaussian(0.0f, mutationSigma); 
 				} while (individual.get(i).weight + n <= 0.0f);
 
 			else 
 				do {
-					n  = nextGaussian(0.0f, 0.2f); 
+					n  = nextGaussian(0.0f, mutationSigma); 
 				} while (individual.get(i).weight + n >= 0.0f);
 
 			individual.get(i).weight += n;
@@ -308,12 +313,29 @@ public class GeneticAlgorithm {
 	}
 
 	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);
 		loggerInit();
-		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
+		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0;
+		float mutationSigma = 0.0f, crossoverRate = 0.0f;
+System.out.println("Enter parameters");
+System.out.print("\nCrossover rate: ");
+crossoverRate = sc.nextFloat();
+System.out.print("\nNumber of elites (population size - elites should be even): ");
+elites = sc.nextInt();
+System.out.print("\nnumber of games per individual: ");
+games = sc.nextInt();
+System.out.print("\nstandard deviation for mutation: ");
+mutationSigma = sc.nextFloat();
+System.out.print("Population size: ");
+populationSize = sc.nextInt();
+		System.out.print("\nTournament size: ");
+		tournamentSize = sc.nextInt();
+		
+		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
 		FitnessAssessment result =ga.trainFor(200); // number of generations to train for
 		System.out.println("Training complete. The best individual is "); 
 		System.out.println(result);
-
+sc.close();
 	}
 
 	// stores information about the fitness of an individual
