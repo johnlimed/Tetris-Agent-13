@@ -18,11 +18,12 @@ public class GeneticAlgorithm {
 	public static float CROSSOVER_RATE = 0.5f;
 	public static final int NUM_GAMES = 5; // number of games to run to assess fitness of an individual
 	public static final int TOURNAMENT_SIZE = 2; // 2's the most common setting. 1 is random selection, higher values causes higher selection pressure
-	public static final int NUM_ELITES= 2; // number of elites to keep
+	public static final int NUM_ELITES= 4; // number of elites to keep
 	ArrayList<ArrayList<FeatureWeightPair>> population;
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
+	private ExecutorService service = Executors.newWorkStealingPool();
 
 	public GeneticAlgorithm(int populationSize) {
 		this.populationSize = populationSize;
@@ -74,13 +75,13 @@ public class GeneticAlgorithm {
 		// 	hence their weights should be negative
 		// for example, the presence of holes should decrease happiness
 
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-0.2f, 0.2f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-0.3f, 0.1f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-0.2f, 0.1f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-2.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-2.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 2.0f), true)); // this increases happiness
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-3.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-3.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 3.0f), true)); // this increases happiness
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-3.0f, 0.0f), false));
 		return individual;
 	}
@@ -183,7 +184,7 @@ public class GeneticAlgorithm {
 
 	// returns information about the lowest, average and highest score on an individual after playing NUM_GAMES games, each game with random piece sequences
 	private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual) {
-		final ExecutorService service = Executors.newFixedThreadPool(NUM_GAMES);
+		
 		ArrayList<Integer> scores = new ArrayList<>();		
 
 		try{
@@ -274,12 +275,12 @@ public class GeneticAlgorithm {
 			float n = 0.0f;
 			if (individual.get(i).increasesHappiness)
 				do {
-					n  = nextGaussian(0.0f, 0.1f); 
+					n  = nextGaussian(0.0f, 0.2f); 
 				} while (individual.get(i).weight + n <= 0.0f);
 
 			else 
 				do {
-					n  = nextGaussian(0.0f, 0.1f); 
+					n  = nextGaussian(0.0f, 0.2f); 
 				} while (individual.get(i).weight + n >= 0.0f);
 
 			individual.get(i).weight += n;
@@ -308,8 +309,8 @@ public class GeneticAlgorithm {
 
 	public static void main(String[] args) {
 		loggerInit();
-		GeneticAlgorithm ga = new GeneticAlgorithm(10); // population size
-		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
+		GeneticAlgorithm ga = new GeneticAlgorithm(100); // population size
+		FitnessAssessment result =ga.trainFor(200); // number of generations to train for
 		System.out.println("Training complete. The best individual is "); 
 		System.out.println(result);
 
