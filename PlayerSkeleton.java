@@ -19,6 +19,9 @@ public class PlayerSkeleton implements Callable<Integer> {
 
 	// returns  h(n) for the given state
 	private float evaluate(ImprovedState s) {
+		if (s.hasLost())
+			return Float.NEGATIVE_INFINITY;
+		
 		float sum = 0.0f;
 
 		for (int i=0; i<features.size(); i++) {
@@ -40,29 +43,11 @@ public class PlayerSkeleton implements Callable<Integer> {
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
 
 		ImprovedState currentState = new ImprovedState(s);
-
 		int bestMove = 0;
-		boolean isNonLosingMoveFound = false;
-		float bestValue = 0.0f;
-
-		// find the first legal move corresponding to a non-losing situation, and assume that to be the best move
-		for (int move = 0; move < legalMoves.length && isNonLosingMoveFound == false; move++) {
+		float bestValue = Float.NEGATIVE_INFINITY;
+		
+				for (int move = 0; move < legalMoves.length; move++) {
 			ImprovedState resultingState = currentState.tryMove(move);
-			isNonLosingMoveFound = !resultingState.hasLost();
-
-			if (isNonLosingMoveFound) {
-				bestMove = move;
-				bestValue = evaluate(resultingState);
-			}
-		}
-
-		if (isNonLosingMoveFound == false)
-			return 0; // if we'll die anyway, it doesn't matter which move we do
-
-		// now see if we can find better moves
-		for (int move = bestMove; move < legalMoves.length; move++) {
-			ImprovedState resultingState = currentState.tryMove(move);
-			if (resultingState.hasLost() == false) {
 				float utility = evaluate(resultingState);
 
 				if (utility > bestValue) {
@@ -70,8 +55,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 					bestMove = move;
 				}
 			}
-		}
-
+	
 		return bestMove;
 
 		/* 
@@ -138,7 +122,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
-		System.out.println("You have completed "+p.playGame(true) +" rows.");
+		System.out.println("You have completed "+p.playGame(false) +" rows.");
 		/* 
 		State s = new State();
 		new TFrame(s);
