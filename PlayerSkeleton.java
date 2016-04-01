@@ -134,13 +134,25 @@ return bestMove;
 */
         
  // non-parallel implementation
-
+ImprovedState copy = new ImprovedState(s);
 for (int move = 0; move < legalMoves.length; move++) {
-ImprovedState resultingState = s.tryMove(move);
-            float utility = evaluate(resultingState);
+	// ImprovedState resultingState = s.tryMove(move);
+	
+    // float utility = evaluate(resultingState);
 
-            if (utility > bestValue) {
-                bestValue = utility;
+    s.makeMove(move);
+	float utility2 = evaluate(s);
+	
+	s.undo();
+
+// if (utility != utility2)
+// 	System.out.println("move = " + move + ", slow = " + utility + " fast = " + utility2);
+	if (s.isCurStateEqual(copy) == false) {
+		System.out.println("not equals.");
+	}
+
+            if (utility2 > bestValue) {
+                bestValue = utility2;
                 bestMove = move;
             }
         }
@@ -184,6 +196,7 @@ return bestMove;
 			ImprovedState s = new ImprovedState();
 			s.setSeed(1459523385736L);
 						while(!s.hasLost()) {
+			// for (int i=0; i<1; i++) {
 				s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
 								}
 			

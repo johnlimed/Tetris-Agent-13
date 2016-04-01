@@ -1,11 +1,11 @@
 import java.util.Random;
 
 // this is a copy of the state file in the skeleton 
-// with the ability to simulate the field when trying out different moves    
+// with the ability to simulate the field when trying out different moves, and to set the seed used for producing sequences    
 // usage: 
 // construct an ImprovedState object with a State object so it has a copy of the current state
 // then, use tryMove to get all the states resulting from trying out all possible moves  
-// finally, use the GA to pick the best one, then make the move on the actual State object
+
 
 public class ImprovedState {
 	public static final int COLS = 10;
@@ -14,21 +14,23 @@ public class ImprovedState {
 	// this rng is used to ensure identical piece sequences
 private Random rng = new java.util.Random();
 
-	public boolean lost = false;
+	public boolean lost = false, prevLost;
 	
-	private int turn = 0;
-	private int cleared = 0;
+	private int turn = 0, prevTurn;
+	private int cleared = 0, prevCleared; 
 	
 	//each square in the grid - int means empty - other values mean the turn it was placed
-	private int[][] field = new int[ROWS][COLS];
+	private int[][] curField = new int[ROWS][COLS]; // the current state of the grid
+	private int[][] prevField; // the previous field, for undo functionality
+	
 	//top row+1 of each column
 	//0 means empty
 	private int[] top = new int[COLS];
+	private int[] prevTop;
 	
 	
 	//number of next piece
-	protected int nextPiece;
-	
+	protected int nextPiece, prevPiece;
 	
 	
 	//all legal moves - first index is piece type - then a list of 2-length arrays
@@ -109,8 +111,24 @@ private Random rng = new java.util.Random();
 	
 	public ImprovedState() {
 		nextPiece = randomPiece();
+		initPrevState();
 	}
 	
+	// initialize all the variables that comprise the previous state
+	private void initPrevState() {
+		prevLost = lost;
+		prevTurn = turn;
+		prevField= new int[ROWS][COLS];
+		
+		for (int row = 0; row < ROWS; row++)
+			System.arraycopy(curField[row], 0, prevField[row], 0, COLS);
+		
+		prevTop = new int[COLS];
+		System.arraycopy(top, 0, prevTop, 0, COLS);
+		
+		prevPiece = nextPiece;
+		prevCleared = cleared;
+	}
 	
 	// does deep copy of the relevant state information
 		public ImprovedState(State s) {
@@ -123,6 +141,7 @@ private Random rng = new java.util.Random();
 				
 		public void setSeed(long seed) {
 			rng.setSeed(seed);
+			prevPiece = nextPiece;
 			nextPiece = randomPiece();
 		}
 		
@@ -133,7 +152,7 @@ private Random rng = new java.util.Random();
 
 
 	public int[][] getField() {
-		return field;
+		return curField;
 	}
 
 	public int[] getTop() {
@@ -177,9 +196,9 @@ private Random rng = new java.util.Random();
 	}
 	
 	//note that this does a deep copy of the parameters. A deep copy is required so that the information can be modified without affecting other objects
-	private ImprovedState(int[][] field, int[] top, boolean lost, int nextPiece, int turn, int cleared) {
+	private ImprovedState(int[][] field, int[] top, boolean lost, int nextPiece, int cleared, int turn) {
 		for (int row = 0; row < ROWS; row++) {
-		System.arraycopy(field[row], 0, this.field[row], 0, COLS);
+		System.arraycopy(field[row], 0, this.curField[row], 0, COLS);
 		}
 		
 		System.arraycopy(top, 0, this.top, 0, COLS);
@@ -187,6 +206,7 @@ private Random rng = new java.util.Random();
 		this.lost = lost;
 		this.cleared = cleared;
 		this.turn = turn;
+		initPrevState();
 	}
 	
 	//gives legal moves for 
@@ -211,12 +231,14 @@ private Random rng = new java.util.Random();
 			int[][] newField = new int[ROWS][COLS]; 
 			
 			for (int row = 0; row < ROWS; row++) {
-				System.arraycopy(field[row], 0, newField[row], 0, COLS);
+				System.arraycopy(curField[row], 0, newField[row], 0, COLS);
 				}
 				
 			int[] newTop = new int[COLS];
 				System.arraycopy(top, 0, newTop, 0, COLS);
 				int newCleared = cleared;
+				int newTurn = turn + 1;
+				
 			//height if the first column makes contact
 			int height = newTop[slot]-pBottom[nextPiece][orient][0];
 			//for each column beyond the first in the piece
@@ -226,16 +248,15 @@ private Random rng = new java.util.Random();
 			
 			//check if game ended
 			if(height+pHeight[nextPiece][orient] >= ROWS) {
-				return new ImprovedState(newField, newTop, true, nextPiece, turn+1, newCleared);
+				return new ImprovedState(newField, newTop, true, nextPiece, newCleared, newTurn);
 			}
 
-			
 			//for each column in the piece - fill in the appropriate blocks
 			for(int i = 0; i < pWidth[nextPiece][orient]; i++) {
 				
 				//from bottom to top of brick
 				for(int h = height+pBottom[nextPiece][orient][i]; h < height+pTop[nextPiece][orient][i]; h++) {
-					newField[h][i+slot] = turn;
+					newField[h][i+slot] = newTurn;
 				}
 			}
 			
@@ -274,7 +295,7 @@ private Random rng = new java.util.Random();
 				}
 			}
 
-			return new ImprovedState(newField, newTop, false, nextPiece, turn+1, newCleared);
+			return new ImprovedState(newField, newTop, false, nextPiece, newCleared, newTurn);
 		}
 
 		// these functions execute the move and modifies the board; they're essentially copied directly from State
@@ -284,13 +305,24 @@ private Random rng = new java.util.Random();
 		}
 		
 		//make a move based on an array of orient and slot
-		public void makeMove(int[] move) {
+		private void makeMove(int[] move) {
 			makeMove(move[ORIENT],move[SLOT]);
 		}
 		
 		//returns false if you lose - true otherwise
-		public boolean makeMove(int orient, int slot) {
+		private boolean makeMove(int orient, int slot) {
+			// make the current state the previous state
+			for (int row = 0; row < ROWS; row++) {
+				System.arraycopy(curField[row], 0, prevField[row], 0, COLS);
+				}
+			
+			prevCleared = cleared;
+			prevLost = lost;
+			prevTurn = turn;
+			prevPiece = nextPiece;
 			turn++;
+			System.arraycopy(top, 0, prevTop, 0, COLS);
+			
 			//height if the first column makes contact
 			int height = top[slot]-pBottom[nextPiece][orient][0];
 			//for each column beyond the first in the piece
@@ -304,13 +336,12 @@ private Random rng = new java.util.Random();
 				return false;
 			}
 
-			
 			//for each column in the piece - fill in the appropriate blocks
 			for(int i = 0; i < pWidth[nextPiece][orient]; i++) {
 				
 				//from bottom to top of brick
 				for(int h = height+pBottom[nextPiece][orient][i]; h < height+pTop[nextPiece][orient][i]; h++) {
-					field[h][i+slot] = turn;
+					curField[h][i+slot] = turn;
 				}
 			}
 			
@@ -326,7 +357,7 @@ private Random rng = new java.util.Random();
 				//check all columns in the row
 				boolean full = true;
 				for(int c = 0; c < COLS; c++) {
-					if(field[r][c] == 0) {
+					if(curField[r][c] == 0) {
 						full = false;
 						break;
 					}
@@ -340,11 +371,11 @@ private Random rng = new java.util.Random();
 
 						//slide down all bricks
 						for(int i = r; i < top[c]; i++) {
-							field[i][c] = field[i+1][c];
+							curField[i][c] = curField[i+1][c];
 						}
 						//lower the top
 						top[c]--;
-						while(top[c]>=1 && field[top[c]-1][c]==0)	top[c]--;
+						while(top[c]>=1 && curField[top[c]-1][c]==0)	top[c]--;
 					}
 				}
 			}
@@ -352,11 +383,63 @@ private Random rng = new java.util.Random();
 
 			//pick a new piece
 			nextPiece = randomPiece();
-			
-
-			
+	
 			return true;
 		}
 
+		// undoes the effects of making the most recent move
+		// only level of undo is supported, i.e if a move caused the state to change from A to B, doing to undos brings you back to B 
+		public void undo() {
+			// make the previous state the current
+			// swap the contents of prev and cur
+			int[][] tempArr  = new int[ROWS][COLS];
+					for (int row = 0; row < ROWS; row++) {
+						System.arraycopy(curField[row], 0, tempArr[row], 0, COLS); // temp = cur
+						System.arraycopy(prevField[row], 0, curField[row], 0, COLS); // cur = prev
+						System.arraycopy(tempArr[row], 0, prevField[row], 0, COLS); // prev = temp
+					}	
 		
+			int tempCleared = cleared;
+			cleared = prevCleared;
+						prevCleared = tempCleared;
+			
+						boolean tempLost = lost;
+						lost = prevLost;
+									prevLost = tempLost;
+						
+									int tempTurn = turn;
+									turn = prevTurn;
+												prevTurn = tempTurn;
+												
+												int tempPiece = nextPiece;
+												nextPiece = prevPiece;
+															prevPiece = tempPiece;
+															
+															int[] tempTop = new int[COLS];
+															System.arraycopy(top, 0, tempTop, 0, COLS); // temp = cur
+															System.arraycopy(prevTop, 0, top, 0, COLS); // cur = prev
+															System.arraycopy(tempTop, 0, prevTop, 0, COLS); // prev = temp
+															
+		}
+
+		// tests if the current state information in 2 ImprovedState objects are equal
+		// This is mainly a debugging aid
+		public boolean isCurStateEqual(ImprovedState other) {
+boolean isCurStateEqual = lost == other.lost && turn == other.turn && cleared == other.cleared;
+ 
+if (isCurStateEqual == false)
+	return false;
+
+for (int r=0; r<ROWS; r++)
+	for (int c=0; c<COLS; c++)
+		if (curField[r][c] != other.curField[r][c])
+			return false;
+
+for (int c=0; c<COLS; c++)
+	if (top[c] != other.top[c])
+		return false;
+
+return true;
+		}
 }
+
