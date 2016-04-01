@@ -46,59 +46,55 @@ public class PlayerSkeleton implements Callable<Integer> {
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
 
 boolean isParallel = true;
-if (isParallel) {
-        int bestMove = 0;
-        float bestValue = Float.NEGATIVE_INFINITY;;
-        List<Future<Float>> results = new ArrayList<Future<Float>>();
-        Float[] value = new Float[legalMoves.length];
-        ImprovedState currentState = new ImprovedState(s);
-        for (int move=0; move<legalMoves.length; move++) {
-            Slave slavePickMove = new Slave(currentState, move, features);
-            results.add(pickMoveThreadPool.submit(slavePickMove));
-        }
-        
-        int counter=0;
-        for(Future<Float> result: results) {
-            try {
-                value[counter] = result.get();
-            } catch (Exception e) {
-                System.out.println("Error caught");
-                pickMoveThreadPool.shutdown();
-            }
-            counter++;
-        }
-        bestValue = value[0];
-        for (int i=0; i<value.length; i++) {
-            // System.out.println("value: " + value[i] + " move: " + i);
-            if (value[i] > bestValue) {
-                bestValue = value[i];
-                bestMove = i;
-            }
-        }
-        
-        return bestMove;
-}
-else { // serial implementation
-        
-        // new serial
-ImprovedState currentState = new ImprovedState(s);
-int bestMove = 0;
-float bestValue = Float.NEGATIVE_INFINITY;
-
-for (int move = 0; move < legalMoves.length; move++) {
-ImprovedState resultingState = currentState.tryMove(move);
-            float utility = evaluate(resultingState);
-
-            if (utility > bestValue) {
-                bestValue = utility;
-                bestMove = move;
-            }
-        }
-return bestMove;
-}
-
-
+	if (isParallel) {
+	    int bestMove = 0;
+	    float bestValue = Float.NEGATIVE_INFINITY;;
+	    List<Future<Float>> results = new ArrayList<Future<Float>>();
+	    Float[] value = new Float[legalMoves.length];
+	    ImprovedState currentState = new ImprovedState(s);
+	    for (int move=0; move<legalMoves.length; move++) {
+	        Slave slavePickMove = new Slave(currentState, move, features);
+	        results.add(pickMoveThreadPool.submit(slavePickMove));
+	    }
+	    
+	    int counter=0;
+	    for(Future<Float> result: results) {
+	        try {
+	            value[counter] = result.get();
+	        } catch (Exception e) {
+	            System.out.println("Error caught");
+	            pickMoveThreadPool.shutdown();
+	        }
+	        counter++;
+	    }
+	    bestValue = value[0];
+	    for (int i=0; i<value.length; i++) {
+	        // System.out.println("value: " + value[i] + " move: " + i);
+	        if (value[i] > bestValue) {
+	            bestValue = value[i];
+	            bestMove = i;
+	        }
+	    }
+	    return bestMove;
 	}
+	else { // serial implementation        
+	    // new serial
+		ImprovedState currentState = new ImprovedState(s);
+		int bestMove = 0;
+		float bestValue = Float.NEGATIVE_INFINITY;
+
+		for (int move = 0; move < legalMoves.length; move++) {
+			ImprovedState resultingState = currentState.tryMove(move);
+		    float utility = evaluate(resultingState);
+
+		    if (utility > bestValue) {
+		        bestValue = utility;
+		        bestMove = move;
+		    }
+		}
+		return bestMove;
+	}
+}
 
 	// plays a game , returning the number of rows completed
 	// use the setFeatureWeightPairs function first
