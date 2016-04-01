@@ -3,6 +3,7 @@
 *.txt
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
+*.lck
 
 # Package Files #
 *.jar
