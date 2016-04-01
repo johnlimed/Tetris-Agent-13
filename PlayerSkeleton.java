@@ -9,8 +9,8 @@ public class PlayerSkeleton implements Callable<Integer> {
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
-
-    private ExecutorService pickMoveThreadPool = Executors.newWorkStealingPool();
+	// multithreading of moves is currently not working; it returns different results from the sequential version, so uncommenting for now
+    // private ExecutorService pickMoveThreadPool = Executors.newWorkStealingPool();
 	private ArrayList<FeatureWeightPair> features;
 
 	public PlayerSkeleton() {
@@ -41,14 +41,11 @@ public class PlayerSkeleton implements Callable<Integer> {
 
 
 	//implement this function to have a working system
-	public int pickMove(State s, int[][] legalMoves) throws InterruptedException {
-		// s is the current state
-		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
-
-boolean isParallel = true;
-if (isParallel) {
-        int bestMove = 0;
+	public int pickMove(State s, int[][] legalMoves) {
+		int bestMove = 0;	
         float bestValue = Float.NEGATIVE_INFINITY;;
+        /* 
+if (isParallel) {
         List<Future<Float>> results = new ArrayList<Future<Float>>();
         Float[] value = new Float[legalMoves.length];
         ImprovedState currentState = new ImprovedState(s);
@@ -76,15 +73,10 @@ if (isParallel) {
             }
         }
         
-        return bestMove;
 }
-else { // serial implementation
-        
-        // new serial
+*/
+        // non-parallel
 ImprovedState currentState = new ImprovedState(s);
-int bestMove = 0;
-float bestValue = Float.NEGATIVE_INFINITY;
-
 for (int move = 0; move < legalMoves.length; move++) {
 ImprovedState resultingState = currentState.tryMove(move);
             float utility = evaluate(resultingState);
@@ -94,10 +86,69 @@ ImprovedState resultingState = currentState.tryMove(move);
                 bestMove = move;
             }
         }
+
 return bestMove;
+	}
+ 
+	// picks the best move when running the game using ImprovedState
+	public int pickMoveForImprovedState(ImprovedState s, int[][] legalMoves) throws InterruptedException {
+		int bestMove = 0;	
+        float bestValue = Float.NEGATIVE_INFINITY;;
+
+ 
+/* this is a parallel version of move evaluation but it returns different answers as the sequential one 
+        {
+        	ArrayList<Callable<Float>> tasks = new ArrayList<Callable<Float>>();
+        List<Future<Float>> results;
+        Float[] value = new Float[legalMoves.length];
+        ImprovedState currentState = new ImprovedState(s);
+        for (int move=0; move<legalMoves.length; move++) {
+            Slave slavePickMove = new Slave(currentState, move, features);
+            tasks.add(slavePickMove);
+            // results.add(pickMoveThreadPool.submit(slavePickMove));
+        }
+        results = pickMoveThreadPool.invokeAll(tasks);
+        int counter=0;
+        for(Future<Float> result: results) {
+            try {
+                value[counter] = result.get();
+            } catch (Exception e) {
+                System.out.println("Error caught");
+                pickMoveThreadPool.shutdown();
+            }
+            counter++;
+        }
+        
+        bestValue = value[0];
+        for (int i=0; i<value.length; i++) {
+            // System.out.println("value: " + value[i] + " move: " + i);
+            if (value[i] > bestValue) {
+                bestValue = value[i];
+                bestMove = i;
+            }
+        }
+        par = bestMove;
 }
+		bestMove = 0;	
+        bestValue = Float.NEGATIVE_INFINITY;;
+*/
+        
+ // non-parallel implementation
 
+for (int move = 0; move < legalMoves.length; move++) {
+ImprovedState resultingState = s.tryMove(move);
+            float utility = evaluate(resultingState);
 
+            if (utility > bestValue) {
+                bestValue = utility;
+                bestMove = move;
+            }
+        }
+
+// for checking if the results returned for both are different
+// if (seq != par)
+// 	System.out.println("Sequential implementation: " + seq + " parallel: " + par);
+return bestMove;
 	}
 
 	// plays a game , returning the number of rows completed
@@ -125,7 +176,22 @@ return bestMove;
 		return s.getRowsCleared();
 	}
 
+	// identical to the playGame function except that ImprovedState is used which is much more useful for training purposes
+	// note that drawing isn't supported though with this one
+		// use the setFeatureWeightPairs function first
+		public int playGameWithImprovedState() throws InterruptedException {
+			assert (!features.isEmpty()); // must set some features to use first
+			ImprovedState s = new ImprovedState();
+			s.setSeed(1459523385736L);
+						while(!s.hasLost()) {
+				s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
+								}
+			
+			return s.getRowsCleared();	
+		}
+
 	public static void main(String[] args) throws InterruptedException {
+ 
 		long startTime = System.currentTimeMillis();
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
@@ -138,10 +204,12 @@ return bestMove;
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
-		System.out.println("You have completed "+p.playGame(false) +" rows.");
+		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+		// System.out.println("You have completed "+p.playGame(false) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
+		
 		/* 
 		State s = new State();
 		new TFrame(s);

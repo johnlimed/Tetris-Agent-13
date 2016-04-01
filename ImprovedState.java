@@ -1,3 +1,5 @@
+import java.util.Random;
+
 // this is a copy of the state file in the skeleton 
 // with the ability to simulate the field when trying out different moves    
 // usage: 
@@ -9,7 +11,8 @@ public class ImprovedState {
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
-
+	// this rng is used to ensure identical piece sequences
+private Random rng = new java.util.Random();
 
 	public boolean lost = false;
 	
@@ -104,7 +107,31 @@ public class ImprovedState {
 	
 	}
 	
+	public ImprovedState() {
+		nextPiece = randomPiece();
+	}
 	
+	
+	// does deep copy of the relevant state information
+		public ImprovedState(State s) {
+			this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber());
+		}
+		
+				public ImprovedState(ImprovedState s) {
+					this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber());
+				}
+				
+		public void setSeed(long seed) {
+			rng.setSeed(seed);
+			nextPiece = randomPiece();
+		}
+		
+	//random integer, returns 0-6
+		private int randomPiece() {
+			return (int)(rng.nextDouble()*N_PIECES);
+		}
+
+
 	public int[][] getField() {
 		return field;
 	}
@@ -133,7 +160,6 @@ public class ImprovedState {
         return pTop;
     }
 
-
 	public int getNextPiece() {
 		return nextPiece;
 	}
@@ -148,11 +174,6 @@ public class ImprovedState {
 	
 	public int getTurnNumber() {
 		return turn;
-	}
-	
-	// does deep copy of the relevant state information
-	public ImprovedState(State s) {
-		this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber());
 	}
 	
 	//note that this does a deep copy of the parameters. A deep copy is required so that the information can be modified without affecting other objects
@@ -186,7 +207,6 @@ public class ImprovedState {
 			return tryMove(move[ORIENT],move[SLOT]);
 		}
 		
-		 
 		private ImprovedState tryMove(int orient, int slot) {
 			int[][] newField = new int[ROWS][COLS]; 
 			
@@ -257,4 +277,86 @@ public class ImprovedState {
 			return new ImprovedState(newField, newTop, false, nextPiece, turn+1, newCleared);
 		}
 
+		// these functions execute the move and modifies the board; they're essentially copied directly from State
+		//make a move based on the move index - its order in the legalMoves list
+		public void makeMove(int move) {
+			makeMove(legalMoves[nextPiece][move]);
+		}
+		
+		//make a move based on an array of orient and slot
+		public void makeMove(int[] move) {
+			makeMove(move[ORIENT],move[SLOT]);
+		}
+		
+		//returns false if you lose - true otherwise
+		public boolean makeMove(int orient, int slot) {
+			turn++;
+			//height if the first column makes contact
+			int height = top[slot]-pBottom[nextPiece][orient][0];
+			//for each column beyond the first in the piece
+			for(int c = 1; c < pWidth[nextPiece][orient];c++) {
+				height = Math.max(height,top[slot+c]-pBottom[nextPiece][orient][c]);
+			}
+			
+			//check if game ended
+			if(height+pHeight[nextPiece][orient] >= ROWS) {
+				lost = true;
+				return false;
+			}
+
+			
+			//for each column in the piece - fill in the appropriate blocks
+			for(int i = 0; i < pWidth[nextPiece][orient]; i++) {
+				
+				//from bottom to top of brick
+				for(int h = height+pBottom[nextPiece][orient][i]; h < height+pTop[nextPiece][orient][i]; h++) {
+					field[h][i+slot] = turn;
+				}
+			}
+			
+			//adjust top
+			for(int c = 0; c < pWidth[nextPiece][orient]; c++) {
+				top[slot+c]=height+pTop[nextPiece][orient][c];
+			}
+			
+			int rowsCleared = 0;
+			
+			//check for full rows - starting at the top
+			for(int r = height+pHeight[nextPiece][orient]-1; r >= height; r--) {
+				//check all columns in the row
+				boolean full = true;
+				for(int c = 0; c < COLS; c++) {
+					if(field[r][c] == 0) {
+						full = false;
+						break;
+					}
+				}
+				//if the row was full - remove it and slide above stuff down
+				if(full) {
+					rowsCleared++;
+					cleared++;
+					//for each column
+					for(int c = 0; c < COLS; c++) {
+
+						//slide down all bricks
+						for(int i = r; i < top[c]; i++) {
+							field[i][c] = field[i+1][c];
+						}
+						//lower the top
+						top[c]--;
+						while(top[c]>=1 && field[top[c]-1][c]==0)	top[c]--;
+					}
+				}
+			}
+		
+
+			//pick a new piece
+			nextPiece = randomPiece();
+			
+
+			
+			return true;
+		}
+
+		
 }
