@@ -150,8 +150,8 @@ ImprovedState resultingState = s.tryMove(move);
 // 	System.out.println("Sequential implementation: " + seq + " parallel: " + par);
 return bestMove;
 	}
-
-	// plays a game , returning the number of rows completed
+	
+		// plays a game , returning the number of rows completed
 	// use the setFeatureWeightPairs function first
 	public int playGame(boolean draw) throws InterruptedException {
 		assert (!features.isEmpty()); // must set some features to use first
