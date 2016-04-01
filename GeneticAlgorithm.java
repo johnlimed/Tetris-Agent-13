@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Scanner;
+=======
+import java.lang.reflect.Array;
+import java.util.*;
+>>>>>>> c4279d1c2d0ee2b29aa06ef1efc18f0bf121360b
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
