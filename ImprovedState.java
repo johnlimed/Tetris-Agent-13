@@ -132,11 +132,11 @@ private Random rng = new java.util.Random();
 	
 	// does deep copy of the relevant state information
 		public ImprovedState(State s) {
-			this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber());
+			this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber(), true);
 		}
 		
 				public ImprovedState(ImprovedState s) {
-					this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber());
+					this(s.getField(), s.getTop(), s.lost, s.getNextPiece(), s.getRowsCleared(), s.getTurnNumber(), true);
 				}
 				
 		public void setSeed(long seed) {
@@ -195,13 +195,20 @@ private Random rng = new java.util.Random();
 		return turn;
 	}
 	
-	//note that this does a deep copy of the parameters. A deep copy is required so that the information can be modified without affecting other objects
-	private ImprovedState(int[][] field, int[] top, boolean lost, int nextPiece, int cleared, int turn) {
+	// the deepCopy parameter controls whether a deep copy of the objects are done, which is required for modification not to affect other objects
+	// Being able to control whether copies are deep or not is primarily a performance optimization
+	private ImprovedState(int[][] field, int[] top, boolean lost, int nextPiece, int cleared, int turn, boolean deepCopy) {
+		if (deepCopy) {
 		for (int row = 0; row < ROWS; row++) {
 		System.arraycopy(field[row], 0, this.curField[row], 0, COLS);
 		}
 		
 		System.arraycopy(top, 0, this.top, 0, COLS);
+		} else {
+			this.curField = field;
+			this.top = top;
+		}
+		
 		this.nextPiece = nextPiece;
 		this.lost = lost;
 		this.cleared = cleared;
@@ -248,7 +255,7 @@ private Random rng = new java.util.Random();
 			
 			//check if game ended
 			if(height+pHeight[nextPiece][orient] >= ROWS) {
-				return new ImprovedState(newField, newTop, true, nextPiece, newCleared, newTurn);
+				return new ImprovedState(newField, newTop, true, nextPiece, newCleared, newTurn, false);
 			}
 
 			//for each column in the piece - fill in the appropriate blocks
@@ -295,7 +302,7 @@ private Random rng = new java.util.Random();
 				}
 			}
 
-			return new ImprovedState(newField, newTop, false, nextPiece, newCleared, newTurn);
+			return new ImprovedState(newField, newTop, false, nextPiece, newCleared, newTurn, false);
 		}
 
 		// these functions execute the move and modifies the board; they're essentially copied directly from State
@@ -391,14 +398,29 @@ private Random rng = new java.util.Random();
 		// only level of undo is supported, i.e if a move caused the state to change from A to B, doing to undos brings you back to B 
 		public void undo() {
 			// make the previous state the current
+			int[][] tempField = curField;
+			curField = prevField;
+			prevField = tempField;
+
+			int[] tempTop = top;
+			top = prevTop;
+			prevTop = tempTop;
+
+			/*
 			// swap the contents of prev and cur
 			int[][] tempArr  = new int[ROWS][COLS];
 					for (int row = 0; row < ROWS; row++) {
 						System.arraycopy(curField[row], 0, tempArr[row], 0, COLS); // temp = cur
 						System.arraycopy(prevField[row], 0, curField[row], 0, COLS); // cur = prev
 						System.arraycopy(tempArr[row], 0, prevField[row], 0, COLS); // prev = temp
-					}	
-		
+					}
+					
+						int[] tempTop = new int[COLS];
+															System.arraycopy(top, 0, tempTop, 0, COLS); // temp = cur
+															System.arraycopy(prevTop, 0, top, 0, COLS); // cur = prev
+															System.arraycopy(tempTop, 0, prevTop, 0, COLS); // prev = temp
+		*/
+			
 			int tempCleared = cleared;
 			cleared = prevCleared;
 						prevCleared = tempCleared;
@@ -415,11 +437,7 @@ private Random rng = new java.util.Random();
 												nextPiece = prevPiece;
 															prevPiece = tempPiece;
 															
-															int[] tempTop = new int[COLS];
-															System.arraycopy(top, 0, tempTop, 0, COLS); // temp = cur
-															System.arraycopy(prevTop, 0, top, 0, COLS); // cur = prev
-															System.arraycopy(tempTop, 0, prevTop, 0, COLS); // prev = temp
-															
+																												
 		}
 
 		// tests if the current state information in 2 ImprovedState objects are equal
