@@ -40,7 +40,7 @@ public class PlayerSkeleton implements Callable<Integer> {
     }
 
 
-	//implement this function to have a working system 
+	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
 		// s is the current state
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
