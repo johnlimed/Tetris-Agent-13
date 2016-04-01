@@ -14,7 +14,7 @@ public class Slave implements Callable <Float> {
         this.features = features;
         this.move = move;
     }
-
+  
     private float evaluate(ImprovedState s) {
         if(s.hasLost())
             return Float.NEGATIVE_INFINITY;
