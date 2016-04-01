@@ -35,27 +35,28 @@ public class PlayerSkeleton implements Callable<Integer> {
 		return sum;
 	}
 
-	public Integer call() {
+	public Integer call() throws InterruptedException {
 		return playGame(false);
     }
 
 
 	//implement this function to have a working system
-	public int pickMove(State s, int[][] legalMoves) {
+	public int pickMove(State s, int[][] legalMoves) throws InterruptedException {
 		// s is the current state
 		// legalMoves is legalMoves for next piece, 2D array [numLegalMoves][0 = orient/ 1 = slot]
 
-
-        // boolean isNonLosingMoveFound = false;
+boolean isParallel = true;
+if (isParallel) {
         int bestMove = 0;
         float bestValue = Float.NEGATIVE_INFINITY;;
-        Collection<Future<Float>> results = new ArrayList<Future<Float>>();
+        List<Future<Float>> results = new ArrayList<Future<Float>>();
         Float[] value = new Float[legalMoves.length];
         ImprovedState currentState = new ImprovedState(s);
         for (int move=0; move<legalMoves.length; move++) {
             Slave slavePickMove = new Slave(currentState, move, features);
             results.add(pickMoveThreadPool.submit(slavePickMove));
         }
+        
         int counter=0;
         for(Future<Float> result: results) {
             try {
@@ -74,51 +75,34 @@ public class PlayerSkeleton implements Callable<Integer> {
                 bestMove = i;
             }
         }
-
-        // serial implementation
-        // find the first legal move corresponding to a non-losing situation, and assume that to be the best move
-//		for (int move = 0; move < legalMoves.length && !isNonLosingMoveFound; move++) {
-//			ImprovedState resultingState = currentState.tryMove(move);
-//			isNonLosingMoveFound = !resultingState.hasLost();
-//			if (isNonLosingMoveFound) {
-//				bestMove = move;
-//				bestValue = evaluate(resultingState);
-//			}
-//		}
-//		if (!isNonLosingMoveFound)
-//			return 0; // if we'll die anyway, it doesn't matter which move we do
-        // now see if we can find better moves
-//		for (int move = bestMove; move < legalMoves.length; move++) {
-//            ImprovedState resultingState = currentState.tryMove(move);
-//			if (!resultingState.hasLost()) {
-//				float utility = evaluate(resultingState);
-//				if (utility > bestValue) {
-//					bestValue = utility;
-//					bestMove = move;
-//				}
-//			}
-//		}
+        
+        return bestMove;
+}
+else { // serial implementation
+        
         // new serial
-//		ImprovedState currentState = new ImprovedState(s);
-//		int bestMove = 0;
-//		float bestValue = Float.NEGATIVE_INFINITY;
-//
-//        for (int move = 0; move < legalMoves.length; move++) {
-//            ImprovedState resultingState = currentState.tryMove(move);
-//            float utility = evaluate(resultingState);
-//
-//            if (utility > bestValue) {
-//                bestValue = utility;
-//                bestMove = move;
-//            }
-//        }
+ImprovedState currentState = new ImprovedState(s);
+int bestMove = 0;
+float bestValue = Float.NEGATIVE_INFINITY;
 
-		return bestMove;
+for (int move = 0; move < legalMoves.length; move++) {
+ImprovedState resultingState = currentState.tryMove(move);
+            float utility = evaluate(resultingState);
+
+            if (utility > bestValue) {
+                bestValue = utility;
+                bestMove = move;
+            }
+        }
+return bestMove;
+}
+
+
 	}
 
 	// plays a game , returning the number of rows completed
 	// use the setFeatureWeightPairs function first
-	public int playGame(boolean draw) {
+	public int playGame(boolean draw) throws InterruptedException {
 		assert (!features.isEmpty()); // must set some features to use first
 		State s = new State();
 		if (draw)
@@ -141,7 +125,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 		return s.getRowsCleared();
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		long startTime = System.currentTimeMillis();
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
@@ -177,14 +161,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 	}
 
 
-	// function to return numCompleteLines: unsure
-	private static int numCompleteLines(State s) {
-		return s.getRowsCleared(); // this gets the cumulative total number of rows cleared so far. Do we want this? 
-		// Or do y'all want to calculate manually for each new state (not cumulative, only count rows cleared by current action)
-		// i'm not sure if the State.java allow us to maintain a state with complete lines (for us to count) without actually executing it on the animation :/
-	}
-
-	// Considered as a pit if the adjacent columns are >= 2. Depth = diff in height with the shortest adjacent col
+		// Considered as a pit if the adjacent columns are >= 2. Depth = diff in height with the shortest adjacent col
 	// should refactor this some more
 	public static class SumOfPitDepth implements FeatureFunction {
 		@Override
