@@ -122,14 +122,16 @@ private long seed; // used to ensure that individuals in the same generation get
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
 seed = System.currentTimeMillis();
-			// compute the fitness of everyone 
+			// compute the fitness of everyone
+assessFitnessOfPopulation();
+/*
 			fitnessResults.clear(); // clear the results from previous population
 
 			for (ArrayList<FeatureWeightPair> individual : population) {
 				rng.setSeed(seed);
 				fitnessResults.add(assessFitness(individual));
 			}
-			
+	*/		
 			Collections.sort(fitnessResults);
 
 			log("fitness scores for this generation:");
@@ -158,7 +160,7 @@ seed = System.currentTimeMillis();
 			System.out.println("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
 		log("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
 		}
-		
+		service.shutdown();
 		return fitnessResults.get(fitnessResults.size() - 1);
 	}
 
@@ -246,6 +248,56 @@ seed = System.currentTimeMillis();
 		return new FitnessAssessment(individual, lowest, sum/numGames, highest);	
 	}
 
+	// returns information about the lowest, average and highest score on the entire population after playing numGames games, each game with random piece sequences
+		private void assessFitnessOfPopulation() {
+			fitnessResults.clear();
+		
+			ArrayList<Integer> scores = new ArrayList<>(numGames * population.size());
+			ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
+			
+			for (ArrayList<FeatureWeightPair> individual : population) {
+				rng.setSeed(seed);
+			for (int game=0; game<numGames; game++) { 
+				PlayerSkeleton player = new PlayerSkeleton();
+				player.setFeatureWeightPairs(individual);
+				player.setSeed(rng.nextLong()); // this is the actual seed used in the sequence
+				tasks.add(service.submit(player));
+			}
+			}
+			
+			for (int i=0; i<population.size(); i++) {
+			for (int game=0; game<numGames; game++)
+				try {
+					int index = (i * numGames) + game;
+				scores.add(tasks.get(index).get());
+						} catch (Exception e) {
+							log("the future computing a game's score was interupted");
+							System.out.println("the future computing a game's score was interupted");
+			}
+			}
+			
+			for (int individual=0; individual<population.size(); individual++) {
+				int startIndex = individual * numGames; // the individual's scores are in indices [startIndex, startIndex+numGames)
+			int lowest = scores.get(startIndex); // the first game played by this individual
+			int highest = lowest;
+			int sum = 0;
+// check second game and up
+			for (int game=1; game< numGames; game++) {
+	int score = scores.get(startIndex+game);
+				if (score > highest) {
+					highest = score;
+				}
+				if (score < lowest) {
+					lowest = score;
+				}
+				sum += score;
+			}
+
+			fitnessResults.add(new FitnessAssessment(population.get(individual), lowest, sum/numGames, highest));	
+		}
+			
+		}
+		
 	// returns the fitness assessment of the individual being selected through tournament selection
 	private FitnessAssessment tournamentSelection(int tournamentSize) {
 		int best = randomInt(0, population.size());
