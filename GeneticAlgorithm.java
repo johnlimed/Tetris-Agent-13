@@ -108,6 +108,7 @@ public class GeneticAlgorithm {
 	// returns fitness information for the best individual in the last generation
 	public FitnessAssessment trainFor(int generations) {
 		assert(generations > 0);
+		System.out.println("training for " + generations + " generations:");
 		log("training for " + generations + " generations:");
 		
 		for (int generation = 0; generation < generations; generation++) {
@@ -309,6 +310,8 @@ public class GeneticAlgorithm {
 	}
 
 	public static void main(String[] args) {
+		int cores = Runtime.getRuntime().availableProcessors();
+		System.out.println("Running genetic algorithm on a machine with " + cores + " logical cores:");
 		Scanner sc = new Scanner(System.in);
 		loggerInit();
 		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0;
@@ -329,7 +332,7 @@ public class GeneticAlgorithm {
 
         long startTime = System.currentTimeMillis();
 		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
-		FitnessAssessment result =ga.trainFor(200); // number of generations to train for
+		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
