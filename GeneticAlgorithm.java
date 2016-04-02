@@ -25,7 +25,7 @@ public class GeneticAlgorithm {
 	PlayerSkeleton player;
 	private Random rng;
 	private ExecutorService service = Executors.newWorkStealingPool();
-// private long seed; // used to seed
+private long seed; // used to ensure that individuals in the same generation get pitted against the same sequence
 	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
 		this.numElites = elites;
 		this.numGames = games;
@@ -114,12 +114,15 @@ public class GeneticAlgorithm {
 		for (int generation = 0; generation < generations; generation++) {
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
-
+seed = System.currentTimeMillis();
 			// compute the fitness of everyone 
 			fitnessResults.clear(); // clear the results from previous population
 
-			for (ArrayList<FeatureWeightPair> individual : population)
+			for (ArrayList<FeatureWeightPair> individual : population) {
+				rng.setSeed(seed);
 				fitnessResults.add(assessFitness(individual));
+			}
+				
 
 			Collections.sort(fitnessResults);
 
@@ -193,6 +196,7 @@ public class GeneticAlgorithm {
 		for (int game=0; game<numGames; game++) { 
 			PlayerSkeleton player = new PlayerSkeleton();
 			player.setFeatureWeightPairs(individual);
+			player.setSeed(rng.nextLong()); // this is the actual seed used in the sequence
 			tasks.add(service.submit(player));
 		}
 		

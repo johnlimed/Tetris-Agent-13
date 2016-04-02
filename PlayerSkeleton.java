@@ -12,6 +12,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 	// multithreading of moves is currently not working; it returns different results from the sequential version, so uncommenting for now
     // private ExecutorService pickMoveThreadPool = Executors.newWorkStealingPool();
 	private ArrayList<FeatureWeightPair> features;
+private Long seed;
 
 	public PlayerSkeleton() {
 		features = new ArrayList<FeatureWeightPair>();
@@ -189,12 +190,20 @@ return bestMove;
 		return s.getRowsCleared();
 	}
 
+	// sets the seed for playing a game with ImprovedState
+	public void setSeed(long seed) {
+		this.seed = seed;
+	}
+	
 	// identical to the playGame function except that ImprovedState is used which is much more useful for training purposes
 	// note that drawing isn't supported though with this one
 		// use the setFeatureWeightPairs function first
 		public int playGameWithImprovedState() throws InterruptedException {
 			assert (!features.isEmpty()); // must set some features to use first
 			ImprovedState s = new ImprovedState();
+			if (seed != null) {
+			s.setSeed(seed);
+			}
 			// s.setSeed(1459523385737L);
 			s.pickNextPiece();
 						while(!s.hasLost()) {
