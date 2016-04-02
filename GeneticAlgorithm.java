@@ -337,7 +337,7 @@ public class GeneticAlgorithm {
         long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
-        System.out.println("GA took: "+totalTime+"ms");
+        System.out.println("GA took: " + totalTime + " ms (" + totalTime/1000 + " seconds)");
         sc.close();
 	}
 
