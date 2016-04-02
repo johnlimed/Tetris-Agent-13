@@ -77,14 +77,14 @@ public class GeneticAlgorithm {
 		// 	hence their weights should be negative
 		// for example, the presence of holes should decrease happiness
 
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-3.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-3.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-3.0f, 0.0f), false));
-		// individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-3.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-3.0f, 0.0f), false));
-		// individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 3.0f), true)); // this increases happiness
-		// individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-3.0f, 0.0f), false));
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 3.0f), true)); // this increases happiness
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-3.0f, 0.0f), false));
 		return individual;
 	}
 
@@ -314,9 +314,11 @@ public class GeneticAlgorithm {
 		System.out.println("Running genetic algorithm on a machine with " + cores + " logical cores:");
 		Scanner sc = new Scanner(System.in);
 		loggerInit();
-		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0;
+		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0;
 		float mutationSigma = 0.0f, crossoverRate = 0.0f;
         System.out.println("Enter parameters");
+        System.out.print("\nnumber of generations: ");
+        generations = sc.nextInt();
         System.out.print("\nCrossover rate: ");
         crossoverRate = sc.nextFloat();
         System.out.print("\nNumber of elites (population size - elites should be even): ");
@@ -332,7 +334,7 @@ public class GeneticAlgorithm {
 		
 		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
 		long startTime = System.currentTimeMillis();
-		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
+		FitnessAssessment result =ga.trainFor(generations); // number of generations to train for
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
