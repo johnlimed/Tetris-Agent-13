@@ -141,8 +141,6 @@ private Random rng = new java.util.Random();
 				
 		public void setSeed(long seed) {
 			rng.setSeed(seed);
-			prevPiece = nextPiece;
-			nextPiece = randomPiece();
 		}
 		
 	//random integer, returns 0-6
@@ -150,6 +148,12 @@ private Random rng = new java.util.Random();
 			return (int)(rng.nextDouble()*N_PIECES);
 		}
 
+public int pickNextPiece() {
+	//pick a new piece
+	prevPiece = nextPiece;
+	nextPiece = randomPiece();
+return nextPiece;
+}
 
 	public int[][] getField() {
 		return curField;
@@ -386,16 +390,13 @@ private Random rng = new java.util.Random();
 					}
 				}
 			}
-		
-
-			//pick a new piece
-			nextPiece = randomPiece();
 	
+			
 			return true;
 		}
 
 		// undoes the effects of making the most recent move
-		// only level of undo is supported, i.e if a move caused the state to change from A to B, doing to undos brings you back to B 
+		// only 1 level of undo is supported 
 		public void undo() {
 			// make the previous state the current
 			int[][] tempField = curField;
@@ -459,5 +460,5 @@ for (int c=0; c<COLS; c++)
 
 return true;
 		}
-}
-
+		
+				}

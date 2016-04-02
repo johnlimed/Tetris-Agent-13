@@ -28,15 +28,14 @@ public class PlayerSkeleton implements Callable<Integer> {
 
 		float sum = 0.0f;
 
-		for (int i=0; i<features.size(); i++) {
-			FeatureWeightPair f = features.get(i);
+		for (FeatureWeightPair f : features) {
 			sum += f.feature.evaluate(s) * f.weight;
 		}
 		return sum;
 	}
 
 	public Integer call() throws InterruptedException {
-		return playGame(false);
+		return playGameWithImprovedState();
     }
 
 
@@ -78,9 +77,9 @@ if (isParallel) {
         // non-parallel
 ImprovedState currentState = new ImprovedState(s);
 for (int move = 0; move < legalMoves.length; move++) {
-ImprovedState resultingState = currentState.tryMove(move);
-            float utility = evaluate(resultingState);
-
+	currentState.makeMove(move);
+            float utility = evaluate(currentState);
+currentState.undo();
             if (utility > bestValue) {
                 bestValue = utility;
                 bestMove = move;
@@ -94,9 +93,9 @@ return bestMove;
 	public int pickMoveForImprovedState(ImprovedState s, int[][] legalMoves) throws InterruptedException {
 		int bestMove = 0;	
         float bestValue = Float.NEGATIVE_INFINITY;;
-
+        /*
+int seq, par;
  
-/* this is a parallel version of move evaluation but it returns different answers as the sequential one 
         {
         	ArrayList<Callable<Float>> tasks = new ArrayList<Callable<Float>>();
         List<Future<Float>> results;
@@ -131,37 +130,37 @@ return bestMove;
 }
 		bestMove = 0;	
         bestValue = Float.NEGATIVE_INFINITY;;
-*/
+
+        */
         
  // non-parallel implementation
-ImprovedState copy = new ImprovedState(s);
+// ImprovedState copy = new ImprovedState(s);
 for (int move = 0; move < legalMoves.length; move++) {
-	/*
-	ImprovedState resultingState = s.tryMove(move);
-    float utility = evaluate(resultingState);
-if (utility > bestValue) {
-                bestValue = utility;
-                bestMove = move;
-            }
-    */        
-	
-    copy.makeMove(move);
-	float utility = evaluate(copy);
-	copy.undo();
 
+	// ImprovedState resultingState = s.tryMove(move);
+    // float utility = evaluate(resultingState);
+// if (utility > bestValue) {
+                // bestValue = utility;
+                // bestMove = move;
+            // }
+           
+    s.makeMove(move);
+	float utility = evaluate(s);
+	s.undo();
+	
 	// if (s.isCurStateEqual(copy) == false)
-		// System.out.println("not equals.");
+// 		System.out.println("current state not equals.");
 	
 	if (utility > bestValue) {
         bestValue = utility;
         bestMove = move;
     }
-
         }
 
 // for checking if the results returned for both are different
 // if (seq != par)
-// 	System.out.println("Sequential implementation: " + seq + " parallel: " + par);
+// System.out.println("Sequential implementation: " + seq + " parallel: " + par);
+
 return bestMove;
 	}
 	
@@ -196,10 +195,12 @@ return bestMove;
 		public int playGameWithImprovedState() throws InterruptedException {
 			assert (!features.isEmpty()); // must set some features to use first
 			ImprovedState s = new ImprovedState();
-			s.setSeed(1459523385736L);
+			s.setSeed(1459523385737L);
+			s.pickNextPiece();
 						while(!s.hasLost()) {
 			// for (int i=0; i<1; i++) {
 				s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
+				s.pickNextPiece();
 								}
 			
 			return s.getRowsCleared();	
@@ -219,8 +220,8 @@ return bestMove;
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
 		p.setFeatureWeightPairs(fwPairs);
-		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-		// System.out.println("You have completed "+p.playGame(false) +" rows.");
+		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+		System.out.println("You have completed "+p.playGame(false) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
