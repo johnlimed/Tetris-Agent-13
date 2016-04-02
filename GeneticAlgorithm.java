@@ -24,7 +24,7 @@ public class GeneticAlgorithm {
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
-	private ExecutorService service = Executors.newWorkStealingPool();
+	private ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 private long seed; // used to ensure that individuals in the same generation get pitted against the same sequence
 
 	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
