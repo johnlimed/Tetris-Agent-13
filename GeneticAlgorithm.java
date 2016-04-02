@@ -25,7 +25,7 @@ public class GeneticAlgorithm {
 	PlayerSkeleton player;
 	private Random rng;
 	private ExecutorService service = Executors.newWorkStealingPool();
-
+// private long seed; // used to seed
 	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
 		this.numElites = elites;
 		this.numGames = games;
@@ -187,37 +187,21 @@ public class GeneticAlgorithm {
 
 	// returns information about the lowest, average and highest score on an individual after playing numGames games, each game with random piece sequences
 	private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual) {
-
-		ArrayList<Integer> scores = new ArrayList<>();
-
-		try{
-			PlayerSkeleton player1 = new PlayerSkeleton();
-			player1.setFeatureWeightPairs(individual);
-			Future<Integer> task1 = service.submit(player1);
-
-			PlayerSkeleton player2 = new PlayerSkeleton();
-			player2.setFeatureWeightPairs(individual);
-			Future<Integer> task2 = service.submit(player2);
-
-			PlayerSkeleton player3 = new PlayerSkeleton();
-			player3.setFeatureWeightPairs(individual);
-			Future<Integer> task3 = service.submit(player3);
-
-			PlayerSkeleton player4 = new PlayerSkeleton();
-			player4.setFeatureWeightPairs(individual);
-			Future<Integer> task4 = service.submit(player4);
-
-			PlayerSkeleton player5 = new PlayerSkeleton();
-			player5.setFeatureWeightPairs(individual);
-			Future<Integer> task5 = service.submit(player5);
-
-			scores.add(task1.get());
-			scores.add(task2.get());
-			scores.add(task3.get());
-			scores.add(task4.get());
-			scores.add(task5.get());
-
-		} catch (Exception e) {
+		ArrayList<Integer> scores = new ArrayList<>(numGames);
+		ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
+		
+		for (int game=0; game<numGames; game++) { 
+			PlayerSkeleton player = new PlayerSkeleton();
+			player.setFeatureWeightPairs(individual);
+			tasks.add(service.submit(player));
+		}
+		
+		for (int game=0; game<numGames; game++)
+			try {
+			scores.add(tasks.get(game).get());
+					} catch (Exception e) {
+						log("the future computing a game's score was interupted");
+						System.out.println("the future computing a game's score was interupted");
 		}
 
 		int lowest = scores.get(0);
@@ -234,7 +218,7 @@ public class GeneticAlgorithm {
 			sum += score;
 		}
 
-		return new FitnessAssessment(individual, lowest, sum/5, highest);	//assuming numGames = 5
+		return new FitnessAssessment(individual, lowest, sum/numGames, highest);	
 	}
 
 	// returns the fitness assessment of the individual being selected through tournament selection
