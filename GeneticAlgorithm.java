@@ -329,9 +329,9 @@ public class GeneticAlgorithm {
         populationSize = sc.nextInt();
 		System.out.print("\nTournament size: ");
 		tournamentSize = sc.nextInt();
-
-        long startTime = System.currentTimeMillis();
+		
 		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
+		long startTime = System.currentTimeMillis();
 		FitnessAssessment result =ga.trainFor(6); // number of generations to train for
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
