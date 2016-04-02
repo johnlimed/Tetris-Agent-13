@@ -26,6 +26,7 @@ public class GeneticAlgorithm {
 	private Random rng;
 	private ExecutorService service = Executors.newWorkStealingPool();
 private long seed; // used to ensure that individuals in the same generation get pitted against the same sequence
+
 	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
 		this.numElites = elites;
 		this.numGames = games;
@@ -105,13 +106,19 @@ private long seed; // used to ensure that individuals in the same generation get
 	}
 	
 	// run the genetic algorithm for a specified number of generations
+	// it will terminate early if convergence is detected. 
+	// ConvergenceThreshhold controls how many generations of no better solution being found before terminating
 	// returns fitness information for the best individual in the last generation
-	public FitnessAssessment trainFor(int generations) {
-		assert(generations > 0);
-		System.out.println("training for " + generations + " generations:");
-		log("training for " + generations + " generations:");
+	public FitnessAssessment trainFor(int generations, int convergenceThreshhold) {
+		assert(generations > 0 && convergenceThreshhold > 0);
+		System.out.println("training for " + generations + " generations with convergence threshhold of " + convergenceThreshhold + " generations:");
+		log("training for " + generations + " generations with convergence threshhold of " + convergenceThreshhold + " generations:");
+		// keep track of convergence to an optimal solution
+		ArrayList<FeatureWeightPair> bestSoFar = null;
+		int generationBestWasFound = 0;
+		boolean convergence = false;
 		
-		for (int generation = 0; generation < generations; generation++) {
+		for (int generation = 0; generation < generations && convergence == false; generation++) {
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
 seed = System.currentTimeMillis();
@@ -122,8 +129,7 @@ seed = System.currentTimeMillis();
 				rng.setSeed(seed);
 				fitnessResults.add(assessFitness(individual));
 			}
-				
-
+			
 			Collections.sort(fitnessResults);
 
 			log("fitness scores for this generation:");
@@ -133,11 +139,26 @@ seed = System.currentTimeMillis();
 			System.out.println("The best individual this generation is ");
 			System.out.println(fitnessResults.get(fitnessResults.size() - 1));
 
+			ArrayList<FeatureWeightPair> curBest = fitnessResults.get(fitnessResults.size() - 1).individual; // best for this generation
+			if (curBest != bestSoFar) { // we just need equality by address
+				bestSoFar = curBest;
+				generationBestWasFound = generation;
+			}
+			
+			convergence = generation - generationBestWasFound >= convergenceThreshhold;	
+			
+			if (convergence == false) {
 			population = reproduce();
 			log("population after reproduction:");
 			logPopulation();
+			}
 		}
 
+		if (convergence) {
+			System.out.println("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
+		log("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
+		}
+		
 		return fitnessResults.get(fitnessResults.size() - 1);
 	}
 
@@ -302,11 +323,13 @@ seed = System.currentTimeMillis();
 		System.out.println("Running genetic algorithm on a machine with " + cores + " logical cores:");
 		Scanner sc = new Scanner(System.in);
 		loggerInit();
-		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0;
+		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0, convergenceThreshhold = 0;
 		float mutationSigma = 0.0f, crossoverRate = 0.0f;
         System.out.println("Enter parameters");
         System.out.print("\nnumber of generations: ");
         generations = sc.nextInt();
+        System.out.print("\nnumber of generations with no improvement  before training stops (convergence): ");
+        convergenceThreshhold = sc.nextInt();
         System.out.print("\nCrossover rate: ");
         crossoverRate = sc.nextFloat();
         System.out.print("\nNumber of elites (population size - elites should be even): ");
@@ -322,7 +345,7 @@ seed = System.currentTimeMillis();
 		
 		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
 		long startTime = System.currentTimeMillis();
-		FitnessAssessment result =ga.trainFor(generations); // number of generations to train for
+		FitnessAssessment result =ga.trainFor(generations, convergenceThreshhold);
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
