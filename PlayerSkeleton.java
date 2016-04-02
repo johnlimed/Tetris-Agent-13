@@ -167,15 +167,15 @@ return bestMove;
 	
 		// plays a game , returning the number of rows completed
 	// use the setFeatureWeightPairs function first
-	public int playGame(boolean draw) throws InterruptedException {
+	public int playGame(boolean alwaysDraw, boolean drawOnLoss) throws InterruptedException {
 		assert (!features.isEmpty()); // must set some features to use first
 		State s = new State();
-		if (draw)
+		if (alwaysDraw)
 			new TFrame(s);
 
 		while(!s.hasLost()) {
 			s.makeMove(pickMove(s,s.legalMoves()));
-			if (draw) {
+			if (alwaysDraw) {
 				s.draw();
 				s.drawNext(0,0);
 
@@ -187,6 +187,12 @@ return bestMove;
 			}
 		}
 
+		if (alwaysDraw == false && drawOnLoss == true) {
+			new TFrame(s);
+			s.draw();
+			s.drawNext(0,0);
+		}
+		
 		return s.getRowsCleared();
 	}
 
@@ -230,7 +236,7 @@ return bestMove;
 		
 		long startTime = System.currentTimeMillis();
 		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-		System.out.println("You have completed "+p.playGame(false) +" rows.");
+		System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");

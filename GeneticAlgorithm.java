@@ -78,13 +78,13 @@ private long seed; // used to ensure that individuals in the same generation get
 		// for example, the presence of holes should decrease happiness
 
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-3.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-3.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-3.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-3.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-3.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 3.0f), true)); // this increases happiness
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-4.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-4.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-4.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-4.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-4.0f, 0.0f), false));
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 4.0f), true)); // this increases happiness
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-4.0f, 0.0f), false));
 		return individual;
 	}
 
