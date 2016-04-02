@@ -195,7 +195,7 @@ return bestMove;
 		public int playGameWithImprovedState() throws InterruptedException {
 			assert (!features.isEmpty()); // must set some features to use first
 			ImprovedState s = new ImprovedState();
-			s.setSeed(1459523385737L);
+			// s.setSeed(1459523385737L);
 			s.pickNextPiece();
 						while(!s.hasLost()) {
 			// for (int i=0; i<1; i++) {
