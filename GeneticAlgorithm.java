@@ -280,7 +280,7 @@ assessFitnessOfPopulation();
 				int startIndex = individual * numGames; // the individual's scores are in indices [startIndex, startIndex+numGames)
 			int lowest = scores.get(startIndex); // the first game played by this individual
 			int highest = lowest;
-			int sum = 0;
+			int sum = lowest;
 // check second game and up
 			for (int game=1; game< numGames; game++) {
 	int score = scores.get(startIndex+game);
@@ -351,6 +351,23 @@ assessFitnessOfPopulation();
 		}
 	}
 
+	// computes the length of a weight vector
+	private static double length(ArrayList<FeatureWeightPair> vec) {
+		float sumSquares = 0.0f;
+		for (FeatureWeightPair f : vec) 
+			sumSquares += f.weight * f.weight;
+		
+		return Math.sqrt(sumSquares);
+	}
+	
+	// normalizes a vector
+	private static void normalize(ArrayList<FeatureWeightPair> vec) {
+		double length = length(vec);
+		
+		for (FeatureWeightPair f : vec)
+			f.weight /= length;
+	}
+	
 	public static void loggerInit() {
 		try {
 			FileHandler handler = new FileHandler("GeneticAlgorithm.txt");

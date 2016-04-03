@@ -164,7 +164,53 @@ for (int move = 0; move < legalMoves.length; move++) {
 
 return bestMove;
 	}
+
+	// lookahead is the number of future pieces we will consider
+	// for example, a value of 1 means that for the current state, execute each legal move m to get some new state. 
+	// From this new state, calculate the highest utility each of the 7 pieces can have and average this out to get the utility for move m
+	private MoveUtilityPair pickMove(State s, int nextPiece, int lookahead) {
+		return pickMove(new ImprovedState(s), nextPiece, lookahead);
+	}
 	
+	private MoveUtilityPair pickMove(ImprovedState s, int nextPiece, int lookahead) {
+		float best = Float.NEGATIVE_INFINITY;
+		int[][][] movesForAllPieces = s.getLegalMovesForAllPieces();
+		int bestMove = 0;
+		
+		if (lookahead == 0) {
+			for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
+				s.makeMove(movesForAllPieces[nextPiece][move]);
+				float utility = evaluate(s);
+				s.undo();
+				
+				if (utility > best) {
+					best = utility;
+					bestMove = move;
+				}
+			}
+		}
+	 
+	else {
+		for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
+			ImprovedState future = s.tryMove(movesForAllPieces[nextPiece][move]);
+			float sum = 0.0f; // sum of future utilities
+			
+			for (int piece=0; piece<ImprovedState.N_PIECES; piece++) {
+				future.setNextPiece(piece);
+				sum += pickMove(future, piece, lookahead-1).utility;
+			}
+			float avgFutureUtility = sum / ImprovedState.N_PIECES;
+			if (avgFutureUtility > best) {
+best = avgFutureUtility;
+bestMove = move;
+			}
+
+		}
+	}
+		
+	return new MoveUtilityPair(bestMove, best); 
+	}
+		
 		// plays a game , returning the number of rows completed
 	// use the setFeatureWeightPairs function first
 	public int playGame(boolean alwaysDraw, boolean drawOnLoss) throws InterruptedException {
@@ -210,12 +256,14 @@ return bestMove;
 			if (seed != null) {
 			s.setSeed(seed);
 			}
-			// s.setSeed(1459523385737L);
+			s.setSeed(1459523385737L);
 			s.pickNextPiece();
 						while(!s.hasLost()) {
 			// for (int i=0; i<1; i++) {
-				s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
+				// s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
+							s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
 				s.pickNextPiece();
+				System.out.println(s.getRowsCleared());
 								}
 			
 			return s.getRowsCleared();	
@@ -235,8 +283,8 @@ return bestMove;
 		p.setFeatureWeightPairs(fwPairs);
 		
 		long startTime = System.currentTimeMillis();
-		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-		System.out.println("You have completed "+p.playGame(false, true) +" rows.");
+		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+		// System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
@@ -399,4 +447,15 @@ return bestMove;
 			return nRowTransitions;
 		}
 	}
+	
+	// convenience class for associating a move index with its utility
+private class MoveUtilityPair {
+	public float utility = 0.0f;
+	public int move = 0;
+	
+	MoveUtilityPair(int m, float u) {
+		move = m;
+		utility = u;
+	}
+}
 }

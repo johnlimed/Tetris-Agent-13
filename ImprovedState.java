@@ -155,6 +155,10 @@ public int pickNextPiece() {
 return nextPiece;
 }
 
+public void setNextPiece(int piece) {
+	prevPiece = nextPiece;
+	nextPiece = piece;
+}
 	public int[][] getField() {
 		return curField;
 	}
@@ -225,7 +229,10 @@ return nextPiece;
 			return legalMoves[nextPiece];
 		}
 		
-
+public int[][][] getLegalMovesForAllPieces() {
+	return legalMoves;
+}
+		
 		//returns a new object representing the state of the game if a particular move was made
 		// move should be an index in the legal moves list
 				// the returned ImprovedState object ccan then be fed into feature functions
@@ -234,7 +241,7 @@ return nextPiece;
 		}
 		
 		//make a move based on an array of orient and slot
-		private ImprovedState tryMove(int[] move) {
+		public ImprovedState tryMove(int[] move) {
 			return tryMove(move[ORIENT],move[SLOT]);
 		}
 		
@@ -316,7 +323,7 @@ return nextPiece;
 		}
 		
 		//make a move based on an array of orient and slot
-		private void makeMove(int[] move) {
+		public void makeMove(int[] move) {
 			makeMove(move[ORIENT],move[SLOT]);
 		}
 		
