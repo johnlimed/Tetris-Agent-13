@@ -81,14 +81,16 @@ public class GeneticAlgorithm {
 		// 	hence their weights should be negative
 		// for example, the presence of holes should decrease happiness
 
-		// individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.BumpinessSquared(), randomFloat(-1.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), randomFloat(-1.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 1.0f), true)); // this increases happiness
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFloat(0.0f, 1.0f), true)); // this increases happiness
 		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-1.0f, 0.0f), false));
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.VarianceHeight(), randomFloat(-1.0f, 0.0f), false));
 		return individual;
 	}
 

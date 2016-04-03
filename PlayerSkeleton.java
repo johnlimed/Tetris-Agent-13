@@ -220,7 +220,8 @@ bestMove = move;
 			new TFrame(s);
 
 		while(!s.hasLost()) {
-			s.makeMove(pickMove(s,s.legalMoves()));
+			// s.makeMove(pickMove(s,s.legalMoves()));
+			s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
 			if (alwaysDraw) {
 				s.draw();
 				s.drawNext(0,0);
@@ -272,18 +273,19 @@ bestMove = move;
 		PlayerSkeleton p = new PlayerSkeleton();
 		// these weights are from a test run with 2 generations of the GA
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.4164334f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.81970763f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.93703204f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -5.9621563f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), -4.838464f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), 2.4920862f, true));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.1674749f, false));
+		// fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.4164334f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.020633409f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.029183429f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.9369789f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), -0.030098647f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), 0.17039244f, true));
+		fwPairs.add(new FeatureWeightPair(new RowTransitions(), -0.16033012f, true));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -0.2552408f, false));
 		p.setFeatureWeightPairs(fwPairs);
 		
 		long startTime = System.currentTimeMillis();
-		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-		// System.out.println("You have completed "+p.playGame(false, true) +" rows.");
+// 		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+		System.out.println("You have completed "+p.playGame(true, false) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
@@ -338,19 +340,19 @@ bestMove = move;
 	}
 
 	// Returns the average height across the columns
-	public static class MeanHeightDiff implements FeatureFunction {
+	public static class MeanHeight implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s)  {
-			int avgHeight = 0;
+			float avgHeight = 0;
 			int[] top = s.getTop();
 			for (int i = 0; i < State.COLS; i++) {
 				avgHeight += top[i];
 			}
-			return (float) avgHeight/State.COLS;
+			return avgHeight/State.COLS;
 		}
     }
 	
-	public static class NumRowsCleared implements FeatureFunction {
+	public static class RowsCleared implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s)  {
 			return (float) s.getRowsCleared();
@@ -411,6 +413,27 @@ bestMove = move;
 		}
 	}
 
+	// The name is a bit misleading, but i can't think of a better name
+	// computes sum of the absolute differences between squared heights of consecutive adjacent columns
+	// for example, for columns with heights of 5 and 4, the difference would be 5^2 - 4^2 = 9
+	// the hope is that this encourages "smoother" play
+		public static class BumpinessSquared implements FeatureFunction {
+			@Override
+			public float evaluate(ImprovedState s) {
+				int bumpiness = 0;
+
+				int[] top = s.getTop();
+
+				for (int i = 0; i < State.COLS - 1; i++) {
+					bumpiness += Math.abs((top[i] * top[i]) - (top[i+1] * top[i+1]));
+				}
+				// System.out.println("bumpiness: " + bumpiness);
+
+				return bumpiness;
+			}
+		}
+
+
 	// maximum column height heuristic
 	public static class MaxHeight implements FeatureFunction {
 		@Override
@@ -429,13 +452,14 @@ bestMove = move;
 			return maxColumnHeight;
 		}
     }
+	
 	// computes total row transitions. Row transitions happen when an empty cell is adjacent to a filled cell and vice versa
 	public static class RowTransitions implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
 			int nRowTransitions = 0;
 			int[][] field = s.getField();
-
+			
 			for (int r=0; r<State.ROWS; r++)
 				for (int c=0; c<State.COLS-1; c++) {
 					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c+1] == 0;
@@ -446,6 +470,27 @@ bestMove = move;
 			return nRowTransitions;
 		}
 	}
+	
+	// computes the variance of the height
+	public static class VarianceHeight implements FeatureFunction {
+		@Override
+		public float evaluate(ImprovedState s) {
+			float sum = 0.0f;
+			int[] top = s.getTop();
+
+			for (int i = 0; i < State.COLS; i++)
+				sum += top[i];
+		
+			float mean = sum / State.COLS;
+			float sumDiffFromMean = 0.0f;
+			
+			for (int c=0; c<State.COLS; c++)
+				sumDiffFromMean = (top[c] - mean) * (top[c] - mean);
+			
+			return sumDiffFromMean / (State.COLS - 1);
+		}
+	}
+	
 	
 	// convenience class for associating a move index with its utility
 private class MoveUtilityPair {
