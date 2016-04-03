@@ -25,7 +25,7 @@ public class GeneticAlgorithm {
 	PlayerSkeleton player;
 	private Random rng;
 	private ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	
+
 	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
 		this.crossoverRate = crossover;
 		this.numElites = elites;
@@ -33,7 +33,7 @@ public class GeneticAlgorithm {
 		this.mutationSigma = mutationSigma;
 		this.populationSize = populationSize;
 		this.tournamentSize = tournamentSize;
-		
+
 		assert(numElites >= 0 && numElites <= populationSize);
 		assert ((populationSize - numElites) % 2 == 0);
 		rng = new Random();
@@ -60,21 +60,21 @@ public class GeneticAlgorithm {
 		}
 		log(str);
 	}
-	
+
 	private String getIndividualAsStr(ArrayList<FeatureWeightPair> individual) {
 		String str = "";
-		
+
 		for (FeatureWeightPair f : individual) {
 			str += f.weight + ", ";
 		}
-		
+
 		return str;
 	}
-	
+
 	private String getIndividualAsStr(int i) {
 		return getIndividualAsStr(population.get(i));
 	}
-	
+
 	private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 		ArrayList<FeatureWeightPair> individual = new ArrayList<FeatureWeightPair>();
 		// all the feature functions we're using so far contribute negatively to happiness and so should be minimized,
@@ -88,10 +88,10 @@ public class GeneticAlgorithm {
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-5.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFloat(0.0f, 5.0f), true)); // this increases happiness
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-5.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), randomFloat(-5.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.TotalHoleDepth(), randomFloat(-5.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFloat(0.0f, 5.0f), true)); // this increases happiness
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-5.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), randomFloat(-5.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.TotalHoleDepth(), randomFloat(-5.0f, 0.0f), false));
 		return individual;
 	}
 
@@ -110,7 +110,7 @@ public class GeneticAlgorithm {
 	private float nextGaussian(float mu, float sigma) {
 		return mu + ((float) rng.nextGaussian() * sigma);
 	}
-	
+
 	// run the genetic algorithm for a specified number of generations
 	// it will terminate early if convergence is detected. 
 	// ConvergenceThreshhold controls how many generations of no better solution being found before terminating
@@ -123,21 +123,21 @@ public class GeneticAlgorithm {
 		ArrayList<FeatureWeightPair> bestSoFar = null;
 		int generationBestWasFound = 0;
 		boolean convergence = false;
-		
+
 		for (int generation = 0; generation < generations && convergence == false; generation++) {
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
 
 			// compute the fitness of everyone
-assessFitnessOfPopulation();
-/*
+			assessFitnessOfPopulation();
+			/*
 			fitnessResults.clear(); // clear the results from previous population
 
 			for (ArrayList<FeatureWeightPair> individual : population) {
 				rng.setSeed(seed);
 				fitnessResults.add(assessFitness(individual));
 			}
-	*/		
+			 */		
 			Collections.sort(fitnessResults);
 
 			log("fitness scores for this generation:");
@@ -152,19 +152,19 @@ assessFitnessOfPopulation();
 				bestSoFar = curBest;
 				generationBestWasFound = generation;
 			}
-			
+
 			convergence = generation - generationBestWasFound >= convergenceThreshhold;	
-			
+
 			if (convergence == false) {
-			population = reproduce();
-			log("population after reproduction:");
-			logPopulation();
+				population = reproduce();
+				log("population after reproduction:");
+				logPopulation();
 			}
 		}
 
 		if (convergence) {
 			System.out.println("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
-		log("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
+			log("Training stopped because convergence was detected with no improvement after " + convergenceThreshhold + " generations");
 		}
 		service.shutdown();
 		return fitnessResults.get(fitnessResults.size() - 1);
@@ -198,11 +198,11 @@ assessFitnessOfPopulation();
 			mutate(child2);
 			if (isLogging)
 				log("After mutation: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
-		
-// normalize(child1);
-// normalize(child2);
-// if (isLogging)
-// 	log("After normalization: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
+
+			// normalize(child1);
+			// normalize(child2);
+			// if (isLogging)
+			// 	log("After normalization: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 
 			children.add(child1);
 			children.add(child2);
@@ -225,21 +225,21 @@ assessFitnessOfPopulation();
 	private FitnessAssessment assessFitness(ArrayList<FeatureWeightPair> individual) {
 		ArrayList<Integer> scores = new ArrayList<>(numGames);
 		ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
-		
+
 		for (int game=0; game<numGames; game++) { 
 			PlayerSkeleton player = new PlayerSkeleton();
 			player.setFeatureWeightPairs(individual);
 			player.setSeed(rng.nextLong()); // this is the actual seed used in the sequence
 			tasks.add(service.submit(player));
 		}
-		
+
 		for (int game=0; game<numGames; game++)
 			try {
-			scores.add(tasks.get(game).get());
-					} catch (Exception e) {
-						log("the future computing a game's score was interupted");
-						System.out.println("the future computing a game's score was interupted");
-		}
+				scores.add(tasks.get(game).get());
+			} catch (Exception e) {
+				log("the future computing a game's score was interupted");
+				System.out.println("the future computing a game's score was interupted");
+			}
 
 		int lowest = scores.get(0);
 		int highest = lowest;
@@ -259,44 +259,44 @@ assessFitnessOfPopulation();
 	}
 
 	// returns information about the lowest, average and highest score on the entire population after playing numGames games, each game with random piece sequences
-		private void assessFitnessOfPopulation() {
-			fitnessResults.clear();
-		
-			ArrayList<Integer> scores = new ArrayList<>(numGames * population.size());
-			ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
-			long[] seeds = new long[numGames];
-			
-			for (int game=0; game<numGames; game++)
-				seeds[game] = rng.nextLong();
-			
-			for (ArrayList<FeatureWeightPair> individual : population) {
+	private void assessFitnessOfPopulation() {
+		fitnessResults.clear();
+
+		ArrayList<Integer> scores = new ArrayList<>(numGames * population.size());
+		ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
+		long[] seeds = new long[numGames];
+
+		for (int game=0; game<numGames; game++)
+			seeds[game] = rng.nextLong();
+
+		for (ArrayList<FeatureWeightPair> individual : population) {
 			for (int game=0; game<numGames; game++) { 
 				PlayerSkeleton player = new PlayerSkeleton();
 				player.setFeatureWeightPairs(individual);
 				player.setSeed(seeds[game]); 
 				tasks.add(service.submit(player));
 			}
-			}
-			
-			for (int i=0; i<population.size(); i++) {
+		}
+
+		for (int i=0; i<population.size(); i++) {
 			for (int game=0; game<numGames; game++)
 				try {
 					int index = (i * numGames) + game;
-				scores.add(tasks.get(index).get());
-						} catch (Exception e) {
-							log("the future computing a game's score was interupted");
-							System.out.println("the future computing a game's score was interupted");
-			}
-			}
-			
-			for (int individual=0; individual<population.size(); individual++) {
-				int startIndex = individual * numGames; // the individual's scores are in indices [startIndex, startIndex+numGames)
+					scores.add(tasks.get(index).get());
+				} catch (Exception e) {
+					log("the future computing a game's score was interupted");
+					System.out.println("the future computing a game's score was interupted");
+				}
+		}
+
+		for (int individual=0; individual<population.size(); individual++) {
+			int startIndex = individual * numGames; // the individual's scores are in indices [startIndex, startIndex+numGames)
 			int lowest = scores.get(startIndex); // the first game played by this individual
 			int highest = lowest;
 			int sum = lowest;
-// check second game and up
+			// check second game and up
 			for (int game=1; game< numGames; game++) {
-	int score = scores.get(startIndex+game);
+				int score = scores.get(startIndex+game);
 				if (score > highest) {
 					highest = score;
 				}
@@ -308,20 +308,20 @@ assessFitnessOfPopulation();
 
 			fitnessResults.add(new FitnessAssessment(population.get(individual), lowest, sum/numGames, highest));	
 		}
-			
-		}
-		
+
+	}
+
 	// returns the fitness assessment of the individual being selected through tournament selection
 	private FitnessAssessment tournamentSelection(int tournamentSize) {
 		int best = randomInt(0, population.size());
 		FitnessAssessment bestFitness = fitnessResults.get(best);
 
 		for (int i = 2; i <= tournamentSize; i++) {
-			int next = randomInt(0, fitnessResults.size());
+			int next = randomInt(fitnessResults.size()-numElites, fitnessResults.size());
 
 			// ensure that the next individual selected is different from the existing best
 			while (best == next)
-				next = randomInt(0, fitnessResults.size());
+				next = randomInt(fitnessResults.size()-numElites, fitnessResults.size());
 
 			FitnessAssessment fitness = fitnessResults.get(next);
 
@@ -369,18 +369,18 @@ assessFitnessOfPopulation();
 		float sumSquares = 0.0f;
 		for (FeatureWeightPair f : vec) 
 			sumSquares += f.weight * f.weight;
-		
+
 		return Math.sqrt(sumSquares);
 	}
-	
+
 	// normalizes a vector
 	private static void normalize(ArrayList<FeatureWeightPair> vec) {
 		double length = length(vec);
-		
+
 		for (FeatureWeightPair f : vec)
 			f.weight /= length;
 	}
-		
+
 	public static void loggerInit() {
 		try {
 			FileHandler handler = new FileHandler("GeneticAlgorithm.txt");
@@ -407,33 +407,33 @@ assessFitnessOfPopulation();
 		loggerInit();
 		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0, convergenceThreshhold = 0;
 		float mutationSigma = 0.0f, crossoverRate = 0.0f;
-        System.out.println("Enter parameters");
-        System.out.print("\nnumber of generations: ");
-        generations = sc.nextInt();
-        System.out.print("\nnumber of generations with no improvement  before training stops (convergence): ");
-        convergenceThreshhold = sc.nextInt();
-        System.out.print("\nCrossover rate: ");
-        crossoverRate = sc.nextFloat();
-        System.out.print("\nNumber of elites (population size - elites should be even): ");
-        elites = sc.nextInt();
-        System.out.print("\nnumber of games per individual: ");
-        games = sc.nextInt();
-        System.out.print("\nstandard deviation for mutation: ");
-        mutationSigma = sc.nextFloat();
-        System.out.print("Population size: ");
-        populationSize = sc.nextInt();
+		System.out.println("Enter parameters");
+		System.out.print("\nnumber of generations: ");
+		generations = sc.nextInt();
+		System.out.print("\nnumber of generations with no improvement  before training stops (convergence): ");
+		convergenceThreshhold = sc.nextInt();
+		System.out.print("\nCrossover rate: ");
+		crossoverRate = sc.nextFloat();
+		System.out.print("\nNumber of elites (population size - elites should be even): ");
+		elites = sc.nextInt();
+		System.out.print("\nnumber of games per individual: ");
+		games = sc.nextInt();
+		System.out.print("\nstandard deviation for mutation: ");
+		mutationSigma = sc.nextFloat();
+		System.out.print("Population size: ");
+		populationSize = sc.nextInt();
 		System.out.print("\nTournament size: ");
 		tournamentSize = sc.nextInt();
-		
+
 		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
 		long startTime = System.currentTimeMillis();
 		FitnessAssessment result =ga.trainFor(generations, convergenceThreshhold);
-        long endTime   = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
 		System.out.println("Training complete. The best individual is ");
 		System.out.println(result);
-        System.out.println("GA took: " + totalTime + " ms (" + totalTime/1000 + " seconds)");
-        sc.close();
+		System.out.println("GA took: " + totalTime + " ms (" + totalTime/1000 + " seconds)");
+		sc.close();
 	}
 
 	// stores information about the fitness of an individual
