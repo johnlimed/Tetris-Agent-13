@@ -396,6 +396,29 @@ bestMove = move;
 		}
 	}
 
+	// number of blocks above holes
+		public static class TotalHoleDepth implements FeatureFunction {
+			@Override
+			public float evaluate(ImprovedState s) {
+				int holeDepths = 0;
+
+				int[][] field = s.getField();
+				int[] top = s.getTop();
+				
+				for (int c = 0; c < State.COLS; c++) {
+				for (int r = 0; r < top[c]; r++) 
+						if (field[r][c] == 0) { // this is a hole, check rows above
+							for (int i=r+1; i<=top[c]; i++)
+								if (field[i][c] != 0)
+								holeDepths++;	
+						}
+					}
+				
+				// System.out.println("hole depths: " + holeDepths);
+				return holeDepths;
+			}
+		}
+
 	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
 	public static class Bumpiness implements FeatureFunction {
 		@Override
@@ -427,8 +450,7 @@ bestMove = move;
 				for (int i = 0; i < State.COLS - 1; i++) {
 					bumpiness += Math.abs((top[i] * top[i]) - (top[i+1] * top[i+1]));
 				}
-				// System.out.println("bumpiness: " + bumpiness);
-
+				
 				return bumpiness;
 			}
 		}
@@ -471,8 +493,8 @@ bestMove = move;
 		}
 	}
 	
-	// computes the variance of the height
-	public static class VarianceHeight implements FeatureFunction {
+	// computes the standard deviation of column heights
+	public static class StdDevHeight implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
 			float sum = 0.0f;
@@ -487,7 +509,7 @@ bestMove = move;
 			for (int c=0; c<State.COLS; c++)
 				sumDiffFromMean = (top[c] - mean) * (top[c] - mean);
 			
-			return sumDiffFromMean / (State.COLS - 1);
+			return (float) Math.sqrt(sumDiffFromMean / (State.COLS - 1));
 		}
 	}
 	
