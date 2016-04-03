@@ -256,14 +256,13 @@ bestMove = move;
 			if (seed != null) {
 			s.setSeed(seed);
 			}
-			s.setSeed(1459523385737L);
+			// s.setSeed(1459523385737L);
 			s.pickNextPiece();
 						while(!s.hasLost()) {
 			// for (int i=0; i<1; i++) {
 				// s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
 							s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
 				s.pickNextPiece();
-				System.out.println(s.getRowsCleared());
 								}
 			
 			return s.getRowsCleared();	

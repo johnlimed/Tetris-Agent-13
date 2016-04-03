@@ -25,14 +25,15 @@ public class GeneticAlgorithm {
 	PlayerSkeleton player;
 	private Random rng;
 	private ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-private long seed; // used to ensure that individuals in the same generation get pitted against the same sequence
-
+	
 	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
+		this.crossoverRate = crossover;
 		this.numElites = elites;
 		this.numGames = games;
 		this.mutationSigma = mutationSigma;
 		this.populationSize = populationSize;
 		this.tournamentSize = tournamentSize;
+		
 		assert(numElites >= 0 && numElites <= populationSize);
 		assert ((populationSize - numElites) % 2 == 0);
 		rng = new Random();
@@ -41,7 +42,9 @@ private long seed; // used to ensure that individuals in the same generation get
 		fitnessResults = new ArrayList<FitnessAssessment>(populationSize);
 
 		for (int i = 0; i < populationSize; i++) {
-			population.add(generateRandomIndividual());
+			ArrayList<FeatureWeightPair> individual = generateRandomIndividual();
+			normalize(individual);
+			population.add(individual);
 		}
 		log("Random individuals generated."); 
 		logPopulation();
@@ -79,13 +82,13 @@ private long seed; // used to ensure that individuals in the same generation get
 		// for example, the presence of holes should decrease happiness
 
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-3.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-4.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-4.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-4.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-4.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-4.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 4.0f), true)); // this increases happiness
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-4.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeightDiff(), randomFloat(-1.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f), false));
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.NumRowsCleared(), randomFloat(0.0f, 1.0f), true)); // this increases happiness
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-1.0f, 0.0f), false));
 		return individual;
 	}
 
@@ -121,7 +124,7 @@ private long seed; // used to ensure that individuals in the same generation get
 		for (int generation = 0; generation < generations && convergence == false; generation++) {
 			System.out.println("currently on generation " + generation);
 			log("currently on generation " + generation);
-seed = System.currentTimeMillis();
+
 			// compute the fitness of everyone
 assessFitnessOfPopulation();
 /*
@@ -190,9 +193,13 @@ assessFitnessOfPopulation();
 
 			mutate(child1);
 			mutate(child2);
-
 			if (isLogging)
 				log("After mutation: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
+		
+normalize(child1);
+normalize(child2);
+if (isLogging)
+	log("After normalization: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 
 			children.add(child1);
 			children.add(child2);
@@ -254,13 +261,16 @@ assessFitnessOfPopulation();
 		
 			ArrayList<Integer> scores = new ArrayList<>(numGames * population.size());
 			ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
+			long[] seeds = new long[numGames];
+			
+			for (int game=0; game<numGames; game++)
+				seeds[game] = rng.nextLong();
 			
 			for (ArrayList<FeatureWeightPair> individual : population) {
-				rng.setSeed(seed);
 			for (int game=0; game<numGames; game++) { 
 				PlayerSkeleton player = new PlayerSkeleton();
 				player.setFeatureWeightPairs(individual);
-				player.setSeed(rng.nextLong()); // this is the actual seed used in the sequence
+				player.setSeed(seeds[game]); 
 				tasks.add(service.submit(player));
 			}
 			}
@@ -367,7 +377,7 @@ assessFitnessOfPopulation();
 		for (FeatureWeightPair f : vec)
 			f.weight /= length;
 	}
-	
+		
 	public static void loggerInit() {
 		try {
 			FileHandler handler = new FileHandler("GeneticAlgorithm.txt");
