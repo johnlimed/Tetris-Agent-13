@@ -43,7 +43,7 @@ public class GeneticAlgorithm {
 
 		for (int i = 0; i < populationSize; i++) {
 			ArrayList<FeatureWeightPair> individual = generateRandomIndividual();
-			// normalize(individual);
+			normalize(individual);
 			population.add(individual);
 		}
 		log("Random individuals generated."); 
@@ -83,15 +83,15 @@ public class GeneticAlgorithm {
 
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-5.0f, 0.0f), false));
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.BumpinessSquared(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-5.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFloat(0.0f, 5.0f), true)); // this increases happiness
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-5.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), randomFloat(-5.0f, 0.0f), false));
-		 individual.add(new FeatureWeightPair(new PlayerSkeleton.TotalHoleDepth(), randomFloat(-5.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.BumpinessSquared(), randomFloat(-1.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-5.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-1.0f, 0.0f), false));
+		// individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), randomFloat(-5.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-1.0f, 0.0f), false));
+		 // individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFloat(0.0f, 5.0f), true)); // this increases happiness
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-1.0f, 0.0f), false));
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), randomFloat(-1.0f, 0.0f), false));
+		 individual.add(new FeatureWeightPair(new PlayerSkeleton.TotalHoleDepth(), randomFloat(-1.0f, 0.0f), false));
 		return individual;
 	}
 
@@ -199,8 +199,8 @@ assessFitnessOfPopulation();
 			if (isLogging)
 				log("After mutation: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 		
-// normalize(child1);
-// normalize(child2);
+normalize(child1);
+normalize(child2);
 // if (isLogging)
 // 	log("After normalization: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 

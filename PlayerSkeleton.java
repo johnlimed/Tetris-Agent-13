@@ -191,7 +191,21 @@ return bestMove;
 		}
 	 
 	else {
+		// evaluate the score of the state resulting from each possible move
+		// then for the moves with scores above average, investigate them further by increasing the depth of the search
+		ArrayList<Float> scores = new ArrayList<Float>(movesForAllPieces[nextPiece].length);
+		float initialSum = 0.0f;
 		for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
+			s.makeMove(movesForAllPieces[nextPiece][move]);
+			float score = evaluate(s);
+			scores.add(score);
+			initialSum += score;
+			s.undo();
+		}
+		float initialAverage = initialSum / movesForAllPieces[nextPiece].length;
+		
+		for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
+			if (scores.get(move) >= initialAverage) {
 			ImprovedState future = s.tryMove(movesForAllPieces[nextPiece][move]);
 			float sum = 0.0f; // sum of future utilities
 			
@@ -206,6 +220,7 @@ bestMove = move;
 			}
 
 		}
+	}
 	}
 		
 	return new MoveUtilityPair(bestMove, best); 
@@ -271,9 +286,9 @@ bestMove = move;
 
 	public static void main(String[] args) throws InterruptedException {
 		PlayerSkeleton p = new PlayerSkeleton();
-		// these weights are from a test run with 2 generations of the GA
+		
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-		// fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), -0.4164334f, false));
+		
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.020633409f, false));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.029183429f, false));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.9369789f, false));
@@ -281,11 +296,12 @@ bestMove = move;
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), 0.17039244f, true));
 		fwPairs.add(new FeatureWeightPair(new RowTransitions(), -0.16033012f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -0.2552408f, false));
-		p.setFeatureWeightPairs(fwPairs);
+
+				p.setFeatureWeightPairs(fwPairs);
 		
 		long startTime = System.currentTimeMillis();
-// 		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-		System.out.println("You have completed "+p.playGame(true, false) +" rows.");
+		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+		System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
