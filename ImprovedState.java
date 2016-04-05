@@ -145,6 +145,7 @@ private Random rng = new java.util.Random();
 		
 	//random integer, returns 0-6
 		private int randomPiece() {
+			/*
 			int rand = rng.nextInt((8 - 0) + 1) + 0;
 			
 			if (rand == 7)
@@ -153,9 +154,9 @@ private Random rng = new java.util.Random();
 				return 6;
 			else
 				return rand;
+			*/
 			
-			// return rand;
-			// return (int)(rng.nextDouble()*N_PIECES);
+			return (int)(rng.nextDouble()*N_PIECES);
 		}
 
 public int pickNextPiece() {
