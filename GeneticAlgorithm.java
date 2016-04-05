@@ -43,7 +43,7 @@ public class GeneticAlgorithm {
 
 		for (int i = 0; i < populationSize; i++) {
 			ArrayList<FeatureWeightPair> individual = generateRandomIndividual();
-			// normalize(individual);
+			normalize(individual);
 			population.add(individual);
 		}
 		log("Random individuals generated."); 
@@ -200,10 +200,10 @@ public class GeneticAlgorithm {
 			if (isLogging)
 				log("After mutation: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 
-// normalize(child1);
-/// normalize(child2);
-// if (isLogging)
-// 	log("After normalization: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
+normalize(child1);
+normalize(child2);
+if (isLogging)
+log("After normalization: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 			
 			children.add(child1);
 			children.add(child2);
@@ -375,16 +375,16 @@ public class GeneticAlgorithm {
 	}
 
 	// normalizes a vector
-	private static void normalize(ArrayList<FeatureWeightPair> vec) {
+	public static void normalize(ArrayList<FeatureWeightPair> vec) {
 		double length = length(vec);
-
+		
 		for (FeatureWeightPair f : vec)
 			f.weight /= length;
 	}
 
-	public static void loggerInit() {
+	public static void loggerInit(String filename) {
 		try {
-			FileHandler handler = new FileHandler("GeneticAlgorithm.txt");
+			FileHandler handler = new FileHandler(filename);
 			handler.setFormatter(new SimpleFormatter());
 			LogManager.getLogManager().reset();
 			logger.addHandler(handler);
@@ -405,7 +405,10 @@ public class GeneticAlgorithm {
 		int cores = Runtime.getRuntime().availableProcessors();
 		System.out.println("Running genetic algorithm on a machine with " + cores + " logical cores:");
 		Scanner sc = new Scanner(System.in);
-		loggerInit();
+		String filename;
+		System.out.print("\nEnter log filename: ");
+		filename = sc.nextLine();
+		loggerInit(filename);
 		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0, convergenceThreshhold = 0;
 		float mutationSigma = 0.0f, crossoverRate = 0.0f;
 		System.out.println("Enter parameters");

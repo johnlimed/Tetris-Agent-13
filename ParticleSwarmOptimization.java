@@ -127,9 +127,28 @@ str += " personal best score: " + individual.personalBestFitness;
 			for (int i=0; i<features.size(); i++)
 				pos[i] = randomFloat(features.get(i).min, features.get(i).max);
 			
+			// normalize(pos);
 			return new Particle(pos);
 		}
 		
+		// computes the length of a weight vector
+		private static double length(float[] vec) {
+			float sumSquares = 0.0f;
+			for (float f : vec) 
+				sumSquares += f;
+
+			return Math.sqrt(sumSquares);
+		}
+
+		// normalizes a vector
+		public static void normalize(float[] vec) {
+			double length = length(vec);
+			
+			for (int i=0; i<vec.length; i++)
+				vec[i] /=  length;
+		}
+
+
 		// run the algorithm for a specified number of generations
 public FitnessAssessment trainFor(int generations, int convergenceThreshhold) {
 	System.out.println("Training for " + generations + " generations with convergence threshhold of " + convergenceThreshhold + " generations:");

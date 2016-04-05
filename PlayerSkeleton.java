@@ -295,11 +295,12 @@ bestMove = move;
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), 0.17039244f, true));
 		fwPairs.add(new FeatureWeightPair(new RowTransitions(), -0.16033012f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -0.2552408f, false));
-				p.setFeatureWeightPairs(fwPairs);
 		
+				p.setFeatureWeightPairs(fwPairs);
+		// GeneticAlgorithm.normalize(fwPairs);
 		long startTime = System.currentTimeMillis();
-		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-		System.out.println("You have completed "+p.playGame(false, true) +" rows.");
+		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+// 		System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
