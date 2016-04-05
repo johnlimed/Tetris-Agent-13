@@ -247,7 +247,6 @@ bestMove = move;
 				}
 			}
 		}
-
 		if (alwaysDraw == false && drawOnLoss == true) {
 			new TFrame(s);
 			s.draw();
@@ -295,12 +294,13 @@ bestMove = move;
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), 0.17039244f, true));
 		fwPairs.add(new FeatureWeightPair(new RowTransitions(), -0.16033012f, true));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -0.2552408f, false));
+		// fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.WellSums(), -0.2552408f, false));
 		
 				p.setFeatureWeightPairs(fwPairs);
 		// GeneticAlgorithm.normalize(fwPairs);
 		long startTime = System.currentTimeMillis();
-		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-// 		System.out.println("You have completed "+p.playGame(false, true) +" rows.");
+		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
@@ -528,7 +528,35 @@ bestMove = move;
 		}
 	}
 
+	// computes total well sums
+	// a well is the number of empty cells above a column's top piece such that
+	// the top cell in the sequence is surrounded by either the board boundary or occupied cells in neighbouring columns
+		public static class WellSums implements FeatureFunction {
+			@Override
+			public float evaluate(ImprovedState s) {
+				int wellSums = 0;
+				int[] top = s.getTop();
+				// check well sums for columns that don't boarder the left and right edge
+				for (int c=1; c<State.COLS - 1; c++) {
+								int curTop = top[c];
+								// get the min height of the adjacent left and right columns
+									int minAdjColHeight = Math.min(top[c-1], top[c+1]);
+									// if the current column is <= than the heights of its neighbours, then there is a well
+									if (curTop <= minAdjColHeight)
+										wellSums += minAdjColHeight - curTop; // this works correctly too if the heights of this columns and its neighbours are the same
+				}
+				
+				// check for the left and rightmost column
+				if (top[1] > top[0])
+					wellSums += top[1] - top[0];
 
+				if (top[State.COLS - 2] > top[State.COLS - 1])
+					wellSums += top[State.COLS - 2] - top[State.COLS - 1];
+
+									return wellSums;
+			}
+		}
+		
 	// convenience class for associating a move index with its utility
 	private class MoveUtilityPair {
 		public float utility = 0.0f;
