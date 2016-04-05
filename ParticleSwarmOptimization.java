@@ -60,10 +60,10 @@ public class ParticleSwarmOptimization {
 		// add features here
 		// features.add(new FeatureBoundaryPair(new PlayerSkeleton.Bumpiness(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.BumpinessSquared(), -10.0f, 0.0f));
-		// features.add(new FeatureBoundaryPair(new PlayerSkeleton.MaxHeight(), -10.0f, 0.0f));
+		features.add(new FeatureBoundaryPair(new PlayerSkeleton.MaxHeight(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.MeanHeight(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.NumHoles(), -10.0f, 0.0f));
-		// features.add(new FeatureBoundaryPair(new PlayerSkeleton.RowsCleared(), 0.0f, 10.0f));
+		features.add(new FeatureBoundaryPair(new PlayerSkeleton.RowsCleared(), 0.0f, 10.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.RowTransitions(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.StdDevHeight(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.SumOfPitDepth(), -10.0f, 0.0f));
@@ -134,27 +134,30 @@ str += " personal best score: " + individual.personalBestFitness;
 public FitnessAssessment trainFor(int generations, int convergenceThreshhold) {
 	System.out.println("Training for " + generations + " generations with convergence threshhold of " + convergenceThreshhold + " generations:");
 	log("training for " + generations + " generations with convergence threshhold of " + convergenceThreshhold + " generations:");
-	Particle bestParticle = population.get(0);
+	
+	float[] bestPosition = population.get(0).getCopyOfPosition();
 	// initialize to the worst possible score
-	FitnessAssessment bestFitness = new FitnessAssessment(bestParticle.position, 0, 0, 0);
-	// convergence isn't really working right now; the algorithm requires keeping track of the "best" score so far
-	// but this score varies from generation to generation because of different piece sequences
-	// if a particle consistently has the best fitness throughout multiple generations, then it will effectively be the best particle found
+	FitnessAssessment bestFitness = new FitnessAssessment(bestPosition, 0, 0, 0);
 	int generationBestWasFound = 0;
 	boolean convergence = false;
 	float changeInInertia = (endInertia - startInertia) / generations; 
 	
 	for (int generation = 0; generation < generations && convergence == false; generation++) {
 		System.out.println("currently on generation " + generation);
+		long[] seeds = new long[numGames];
 		
-		assessFitnessOfPopulation();
+		for (int game=0; game<numGames; game++)
+			seeds[game] = rng.nextLong();
+		
+		 bestFitness = assessFitness(seeds, bestPosition);
+		assessFitnessOfPopulation(seeds);
 		
 		for (int i=0; i<population.size(); i++) {
 			Particle particle = population.get(i);
 			FitnessAssessment curFitness = fitnessResults.get(i);
 			if (curFitness.compareTo(bestFitness) > 0) {
 				bestFitness = curFitness;
-				bestParticle = particle;
+				bestPosition = particle.getCopyOfPosition();
 				generationBestWasFound = generation;
 			}
 			
@@ -170,11 +173,10 @@ public FitnessAssessment trainFor(int generations, int convergenceThreshhold) {
 		convergence = generation - generationBestWasFound >= convergenceThreshhold;
 	
 		if (convergence == false) {
-		determineVelocity(bestParticle.position);
+		determineVelocity(bestPosition);
 		mutate();
 		log("population after mutation:");
 		logPopulation();
-		bestFitness = new FitnessAssessment(bestParticle.position, 0, 0, 0); // reset best fitness
 		}
 		inertia += changeInInertia;
 
@@ -186,36 +188,71 @@ public FitnessAssessment trainFor(int generations, int convergenceThreshhold) {
 	}
 	service.shutdown();
 	
-	return bestFitness; // currently buggy as it always returns 0
+	return bestFitness;
 }
 		
-// returns a PlayerSkeleton initialized with the weights of a particle
-private PlayerSkeleton getNewPlayerUsingParticle(Particle p) {
+// assess fitness of an individual
+private FitnessAssessment assessFitness(long[] seeds, float[] pos) {
+	ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
+				ArrayList<Integer> scores = new ArrayList<Integer>(numGames);
+
+				for (int game=0; game<numGames; game++) { 
+					PlayerSkeleton player = getNewPlayerUsingWeights(pos);
+					player.setSeed(seeds[game]); 
+					tasks.add(service.submit(player));
+				}
+
+	// retrieve scores for best vector
+				for (int game=0; game<numGames; game++)
+					try {
+					scores.add(tasks.get(game).get());
+							} catch (Exception e) {
+								log("the future computing a game's score was interupted");
+								System.out.println("the future computing a game's score was interupted");
+				}
+				
+	int lowest = scores.get(0); // the first game played by best vector
+				int highest = lowest;
+				int sum = lowest;
+	//check second game and up
+							for (int game=1; game< numGames; game++) {
+		int score = scores.get(game);
+					if (score > highest) {
+						highest = score;
+					}
+					if (score < lowest) {
+						lowest = score;
+					}
+					sum += score;
+				}
+
+	return new FitnessAssessment(pos, lowest, sum/numGames, highest);	
+}
+
+
+// returns a PlayerSkeleton initialized with a weight vector
+private PlayerSkeleton getNewPlayerUsingWeights(float[] weights) {
 	PlayerSkeleton player = new PlayerSkeleton();
-	ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>(features.size());
 	int numFeatures = features.size();
+	ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>(numFeatures);
 	
 	for (int i=0; i<numFeatures; i++)
-	fwPairs.add(new FeatureWeightPair(features.get(i).feature, p.position[i], false)); // the third argument doesn't really matter here; only used by GA
+	fwPairs.add(new FeatureWeightPair(features.get(i).feature, weights[i], false)); // the third argument doesn't really matter here; only used by GA
 	
 		player.setFeatureWeightPairs(fwPairs);
 	return player;
 }
 
 // computes the fitness of all particles
-		private void assessFitnessOfPopulation() {
+		private void assessFitnessOfPopulation(long[] seeds) {
 			fitnessResults.clear();
 		
 			ArrayList<Integer> scores = new ArrayList<>(numGames * population.size());
-			ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames);
-			long[] seeds = new long[numGames];
-			
-			for (int game=0; game<numGames; game++)
-				seeds[game] = rng.nextLong();
-			
+			ArrayList<Future<Integer>> tasks = new ArrayList<Future<Integer>>(numGames * population.size());
+
 			for (Particle individual : population) {
 			for (int game=0; game<numGames; game++) { 
-				PlayerSkeleton player = getNewPlayerUsingParticle(individual);
+				PlayerSkeleton player = getNewPlayerUsingWeights(individual.position);
 				player.setSeed(seeds[game]); 
 				tasks.add(service.submit(player));
 			}
@@ -227,7 +264,7 @@ private PlayerSkeleton getNewPlayerUsingParticle(Particle p) {
 					int index = (i * numGames) + game;
 				scores.add(tasks.get(index).get());
 						} catch (Exception e) {
-// 							log("the future computing a game's score was interupted");
+							log("the future computing a game's score was interupted");
 							System.out.println("the future computing a game's score was interupted");
 			}
 			}
@@ -250,6 +287,51 @@ private PlayerSkeleton getNewPlayerUsingParticle(Particle p) {
 			}
 
 			fitnessResults.add(new FitnessAssessment(population.get(individual).position, lowest, sum/numGames, highest));	
+		}
+			
+			tasks.clear();
+			scores.clear();
+			// update the score of the personal best positions of the particle
+			// we can't reuse the old value as the personal best would perform differently across generations
+			for (Particle individual : population) {
+			for (int game=0; game<numGames; game++) { 
+				PlayerSkeleton player = getNewPlayerUsingWeights(individual.personalBestVector);
+				player.setSeed(seeds[game]); 
+				tasks.add(service.submit(player));
+			}
+			}
+			
+			for (int i=0; i<population.size(); i++) {
+			for (int game=0; game<numGames; game++)
+				try {
+					int index = (i * numGames) + game;
+				scores.add(tasks.get(index).get());
+						} catch (Exception e) {
+							log("the future computing a game's score was interupted");
+							System.out.println("the future computing a game's score was interupted");
+			}
+			}
+			
+			for (int individual=0; individual<population.size(); individual++) {
+				int startIndex = individual * numGames; // the individual's scores are in indices [startIndex, startIndex+numGames)
+			int lowest = scores.get(startIndex); // the first game played by this individual
+			int highest = lowest;
+			int sum = lowest;
+//check second game and up
+			for (int game=1; game< numGames; game++) {
+	int score = scores.get(startIndex+game);
+				if (score > highest) {
+					highest = score;
+				}
+				if (score < lowest) {
+					lowest = score;
+				}
+				
+				sum += score;
+			}
+			
+			FitnessAssessment f = new FitnessAssessment(population.get(individual).personalBestVector, lowest, sum/numGames, highest);
+			population.get(individual).personalBestFitness = f;
 		}
 			
 		}

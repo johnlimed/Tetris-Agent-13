@@ -39,4 +39,13 @@ public void setBestFitnessVector (float[] pos) {
 		personalBestVector[i] = pos[i];
 }
 
+// returns a deep copy of position
+public float[] getCopyOfPosition() {
+	float[] posCopy = new float[position.length];
+	
+	for (int i=0; i<position.length; i++)
+		posCopy[i] = position[i];
+	
+	return posCopy;
+}
 }
