@@ -63,12 +63,12 @@ public class ParticleSwarmOptimization {
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.MaxHeight(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.MeanHeight(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.NumHoles(), -10.0f, 0.0f));
-		features.add(new FeatureBoundaryPair(new PlayerSkeleton.RowsCleared(), 0.0f, 10.0f));
+features.add(new FeatureBoundaryPair(new PlayerSkeleton.RowsCleared(), 0.0f, 10.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.RowTransitions(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.StdDevHeight(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.SumOfPitDepth(), -10.0f, 0.0f));
 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.TotalHoleDepth(), -10.0f, 0.0f));
-// 		features.add(new FeatureBoundaryPair(new PlayerSkeleton.WellSums(), -10.0f, 0.0f));
+// features.add(new FeatureBoundaryPair(new PlayerSkeleton.WellSums(), -10.0f, 0.0f));
 
 		generateRandomPopulation();
 		logPopulation();
