@@ -1,4 +1,7 @@
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Array;
+import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,6 +13,8 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+
+import javax.imageio.IIOException;
 
 public class GeneticAlgorithm {
 	private static final boolean isLogging = true;
@@ -74,7 +79,7 @@ public class GeneticAlgorithm {
 	private String getIndividualAsStr(int i) {
 		return getIndividualAsStr(population.get(i));
 	}
-
+	static FileWriter writer;
 	private ArrayList<FeatureWeightPair> generateRandomIndividual() {
 		ArrayList<FeatureWeightPair> individual = new ArrayList<FeatureWeightPair>();
 		// all the feature functions we're using so far contribute negatively to happiness and so should be minimized,
@@ -83,15 +88,15 @@ public class GeneticAlgorithm {
 
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.AggHeight(), randomFloat(-5.0f, 0.0f), false));
 		// individual.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.BumpinessSquared(), randomFloat(-5.0f, 0.0f), false));
+		//individual.add(new FeatureWeightPair(new PlayerSkeleton.BumpinessSquared(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), randomFloat(-5.0f, 0.0f), false));
 // 		individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFloat(0.0f, 5.0f), true)); // this increases happiness
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), randomFloat(-5.0f, 0.0f), false));
-// individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-5.0f, 0.0f), false));
-		individual.add(new FeatureWeightPair(new PlayerSkeleton.TotalHoleDepth(), randomFloat(-5.0f, 0.0f), false));
+		individual.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), randomFloat(-5.0f, 0.0f), false));
+		//individual.add(new FeatureWeightPair(new PlayerSkeleton.TotalHoleDepth(), randomFloat(-5.0f, 0.0f), false));
 		individual.add(new FeatureWeightPair(new PlayerSkeleton.WellSums(), randomFloat(-5.0f, 0.0f), false)); // i think this is a superset of sum of pit depth
 
 		return individual;
@@ -142,9 +147,15 @@ public class GeneticAlgorithm {
 			 */		
 			Collections.sort(fitnessResults);
 
+
 			log("fitness scores for this generation:");
-			for (int j=0; j<fitnessResults.size(); j++)
+			for (int j=0; j<fitnessResults.size(); j++) {
 				log(fitnessResults.get(j).toString());
+				if (generation == 0) {
+					writeToCSV(fitnessResults.get(j));
+				}
+			}
+			
 
 			System.out.println("The best individual this generation is ");
 			System.out.println(fitnessResults.get(fitnessResults.size() - 1));
@@ -180,8 +191,9 @@ public class GeneticAlgorithm {
 		ArrayList<ArrayList<FeatureWeightPair>> children = new ArrayList<ArrayList<FeatureWeightPair>>(population.size()); // the next generation
 
 		// copy numElites which should be at the end of the array after sorting
-		for (int i = 0; i < numElites; i++)
+		for (int i = 0; i < numElites; i++) {
 			children.add(fitnessResults.get(fitnessResults.size() - 1 - i).individual);
+		}
 
 		for (int i = 0; i<iterations; i++) {
 			// find 2 parents to mate
@@ -208,6 +220,8 @@ public class GeneticAlgorithm {
 			
 			children.add(child1);
 			children.add(child2);
+			writeToCSV(assessFitness(child1));
+			writeToCSV(assessFitness(child2));
 		}
 
 		return children;
@@ -352,16 +366,7 @@ public class GeneticAlgorithm {
 	private void mutate(ArrayList<FeatureWeightPair> individual) {
 		for (int i = 0; i < individual.size(); i++) {
 			float n = 0.0f;
-			if (individual.get(i).increasesHappiness)
-				do {
-					n  = nextGaussian(0.0f, mutationSigma);
-				} while (individual.get(i).weight + n <= 0.0f);
-
-			else
-				do {
-					n  = nextGaussian(0.0f, mutationSigma);
-				} while (individual.get(i).weight + n >= 0.0f);
-
+			n  = nextGaussian(0.0f, mutationSigma);
 			individual.get(i).weight += n;
 		}
 	}
@@ -401,6 +406,24 @@ public class GeneticAlgorithm {
 		if (isLogging)
 			logger.log(Level.INFO, msg);
 	}
+	
+	public static void writeToCSV(FitnessAssessment fitness) {
+		try {
+			for (FeatureWeightPair feature: fitness.individual) {
+				writer.append(String.valueOf(feature.weight));
+				writer.append(',');
+			}
+			writer.append(String.valueOf(fitness.lowest));
+			writer.append(',');
+			writer.append(String.valueOf(fitness.average));
+			writer.append(',');
+			writer.append(String.valueOf(fitness.highest));
+			writer.append('\n');
+			writer.flush();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
 
 	public static void main(String[] args) {
 		int cores = Runtime.getRuntime().availableProcessors();
@@ -430,15 +453,44 @@ public class GeneticAlgorithm {
 		System.out.print("\nTournament size: ");
 		tournamentSize = sc.nextInt();
 
-		GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
-		long startTime = System.currentTimeMillis();
-		FitnessAssessment result =ga.trainFor(generations, convergenceThreshhold);
-		long endTime   = System.currentTimeMillis();
-		long totalTime = endTime - startTime;
-		System.out.println("Training complete. The best individual is ");
-		System.out.println(result);
-		System.out.println("GA took: " + totalTime + " ms (" + totalTime/1000 + " seconds)");
-		sc.close();
+		try {
+			writer = new FileWriter("weightsData.csv");
+			System.out.println("csv file created");
+			writer.append("MaxHeight");
+		    writer.append(',');
+		    writer.append("MeanHeight");
+		    writer.append(',');
+		    writer.append("NumHoles");
+		    writer.append(',');
+		    writer.append("RowTransitions");
+		    writer.append(',');
+		    writer.append("StdDevHeight");
+		    writer.append(',');
+		    writer.append("SumOfPitDepths");
+		    writer.append(',');
+		    writer.append("WellSums");
+		    writer.append(',');
+		    writer.append("LowestScore");
+		    writer.append(',');
+		    writer.append("AverageScore");
+		    writer.append(',');
+		    writer.append("HighestScore");
+		    writer.append('\n');
+		    GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
+			long startTime = System.currentTimeMillis();
+			FitnessAssessment result =ga.trainFor(generations, convergenceThreshhold);
+			long endTime   = System.currentTimeMillis();
+			long totalTime = endTime - startTime;
+			System.out.println("Training complete. The best individual is ");
+			System.out.println(result);
+			System.out.println("GA took: " + totalTime + " ms (" + totalTime/1000 + " seconds)");
+			sc.close();
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			
+		}
+		
 	}
 
 	// stores information about the fitness of an individual
