@@ -191,21 +191,25 @@ if (isParallel) {
 		}
 	else {
 		// evaluate the score of the state resulting from each possible move
-		// then for the moves with scores above average, investigate them further by increasing the depth of the search
-		ArrayList<Float> scores = new ArrayList<Float>(movesForAllPieces[nextPiece].length);
-		float initialSum = 0.0f;
+		
+		ArrayList<MoveUtilityPair> scores = new ArrayList<MoveUtilityPair>(movesForAllPieces[nextPiece].length);
+		// int numNodesToExpand = (int)(0.25 * movesForAllPieces[nextPiece].length);
+		int numNodesToExpand = 3; // the best n nodes to expand
+		
 		for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
 			s.makeMove(movesForAllPieces[nextPiece][move]);
 			float score = evaluate(s);
-			scores.add(score);
-			initialSum += score;
+			scores.add(new MoveUtilityPair(move, score));
 			s.undo();
 		}
-		
-		float initialAverage = initialSum / movesForAllPieces[nextPiece].length;
-		
-		for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
-			if (scores.get(move) >= initialAverage) {
+		Collections.sort(scores);
+		int minIndex = (scores.size() - numNodesToExpand >= 0) ? scores.size() - numNodesToExpand : 0; 
+					
+		for (int i = minIndex; i < scores.size(); i++) {
+			int move = scores.get(i).move;
+		float curUtility = scores.get(i).utility;
+			if (curUtility > Float.NEGATIVE_INFINITY) {
+
 			ImprovedState future = s.tryMove(movesForAllPieces[nextPiece][move]);
 			float sum = 0.0f; // sum of future utilities
 			
@@ -214,6 +218,7 @@ if (isParallel) {
 				sum += pickMove(future, piece, lookahead-1).utility;
 			}
 			float avgFutureUtility = sum / ImprovedState.N_PIECES;
+			
 			if (avgFutureUtility > best) {
 best = avgFutureUtility;
 bestMove = move;
@@ -273,8 +278,6 @@ bestMove = move;
 		// s.setSeed(1459523385737L);
 		s.pickNextPiece();
 		while(!s.hasLost()) {
-			// for (int i=0; i<1; i++) {
-			// s.makeMove(pickMoveForImprovedState(s,s.legalMoves()));
 			s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
 			s.pickNextPiece();
 		}
@@ -297,10 +300,10 @@ bestMove = move;
 		// fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.WellSums(), -0.2552408f, false));
 		
 				p.setFeatureWeightPairs(fwPairs);
-		// GeneticAlgorithm.normalize(fwPairs);
+		
 		long startTime = System.currentTimeMillis();
-		// System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-System.out.println("You have completed "+p.playGame(false, true) +" rows.");
+		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
+// System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
@@ -558,7 +561,7 @@ System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 		}
 		
 	// convenience class for associating a move index with its utility
-	private class MoveUtilityPair {
+	private class MoveUtilityPair implements Comparable<MoveUtilityPair> {
 		public float utility = 0.0f;
 		public int move = 0;
 
@@ -566,5 +569,15 @@ System.out.println("You have completed "+p.playGame(false, true) +" rows.");
 			move = m;
 			utility = u;
 		}
+		
+		public int compareTo(MoveUtilityPair other) {
+			if (utility < other.utility)
+				return -1;
+
+			if (utility> other.utility)
+				return 1;
+
+			return 0;
 	}
+}
 }
