@@ -29,9 +29,10 @@ public class GeneticAlgorithm {
 	ArrayList<FitnessAssessment> fitnessResults;
 	PlayerSkeleton player;
 	private Random rng;
-	private ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	private ExecutorService service;
 
-	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize) {
+	public GeneticAlgorithm(float crossover, int elites, int games, float mutationSigma, int populationSize, int tournamentSize, int threads) {
+		service = Executors.newFixedThreadPool(threads);
 		this.crossoverRate = crossover;
 		this.numElites = elites;
 		this.numGames = games;
@@ -137,23 +138,14 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 
 			// compute the fitness of everyone
 			assessFitnessOfPopulation();
-			/*
-			fitnessResults.clear(); // clear the results from previous population
-
-			for (ArrayList<FeatureWeightPair> individual : population) {
-				rng.setSeed(seed);
-				fitnessResults.add(assessFitness(individual));
-			}
-			 */		
-			Collections.sort(fitnessResults);
-
+						Collections.sort(fitnessResults);
 
 			log("fitness scores for this generation:");
 			for (int j=0; j<fitnessResults.size(); j++) {
 				log(fitnessResults.get(j).toString());
-				if (generation == 0) {
-					writeToCSV(fitnessResults.get(j));
-				}
+				// if (generation == 0) {
+// 					writeToCSV(fitnessResults.get(j));
+				// }
 			}
 			
 
@@ -173,6 +165,7 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 				log("population after reproduction:");
 				logPopulation();
 			}
+			
 		}
 
 		if (convergence) {
@@ -185,6 +178,7 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 
 	// reproduces children
 	private ArrayList<ArrayList<FeatureWeightPair>> reproduce() {
+		
 		// after the fitnessResults array is sorted, copy the best numElites individuals
 		int iterations = (population.size() - numElites) / 2; // how many we need to produce replacements
 
@@ -194,12 +188,14 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 		for (int i = 0; i < numElites; i++) {
 			children.add(fitnessResults.get(fitnessResults.size() - 1 - i).individual);
 		}
-
+		
 		for (int i = 0; i<iterations; i++) {
+			
 			// find 2 parents to mate
 			ArrayList<FeatureWeightPair> child1 = deepCopyIndividual(tournamentSelection(tournamentSize).individual);
+			
 			ArrayList<FeatureWeightPair> child2 = deepCopyIndividual(tournamentSelection(tournamentSize).individual);
-
+			
 			if (isLogging)
 				log("mating " + getIndividualAsStr(child1) + " with " + getIndividualAsStr(child2));
 
@@ -209,6 +205,7 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 				log("After crossover: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
 
 			mutate(child1);
+			
 			mutate(child2);
 			if (isLogging)
 				log("After mutation: child1 = " + getIndividualAsStr(child1) + ", child2 = " + getIndividualAsStr(child2));
@@ -220,8 +217,7 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 			
 			children.add(child1);
 			children.add(child2);
-			writeToCSV(assessFitness(child1));
-			writeToCSV(assessFitness(child2));
+			
 		}
 
 		return children;
@@ -331,13 +327,14 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 	private FitnessAssessment tournamentSelection(int tournamentSize) {
 		int best = randomInt(0, population.size());
 		FitnessAssessment bestFitness = fitnessResults.get(best);
-
+		
 		for (int i = 2; i <= tournamentSize; i++) {
-			int next = randomInt(fitnessResults.size()-numElites, fitnessResults.size());
+			int next = randomInt(0, population.size());
+			// System.out.println("i = " + i + " best = " + best + " next = " + next);
 
 			// ensure that the next individual selected is different from the existing best
 			while (best == next)
-				next = randomInt(fitnessResults.size()-numElites, fitnessResults.size());
+				next = randomInt(0, fitnessResults.size());
 
 			FitnessAssessment fitness = fitnessResults.get(next);
 
@@ -396,8 +393,8 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 			logger.addHandler(handler);
 			logger.log(Level.INFO, "logger initialized\n");
 		} catch (Exception e) {
-			/* error opening the log file - just get rid of logging so it won't 
-			 * print to the console while the user is running the program */
+			// error opening the log file - just get rid of logging so it won't 
+			 // print to the console while the user is running the program 
 			LogManager.getLogManager().reset();
 		}
 	}
@@ -433,7 +430,7 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 		System.out.print("\nEnter log filename: ");
 		filename = sc.nextLine();
 		loggerInit(filename);
-		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0, convergenceThreshhold = 0;
+		int elites = 0, games = 0, populationSize = 0, tournamentSize = 0, generations = 0, convergenceThreshhold = 0, threads = 0, repeats = 0;
 		float mutationSigma = 0.0f, crossoverRate = 0.0f;
 		System.out.println("Enter parameters");
 		System.out.print("\nnumber of generations: ");
@@ -452,7 +449,15 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 		populationSize = sc.nextInt();
 		System.out.print("\nTournament size: ");
 		tournamentSize = sc.nextInt();
-
+		System.out.print("\nNumber of threads to use (aid for collecting report data. should not be > number of cores): ");
+		threads = sc.nextInt();
+		System.out.print("\nEnter number of times to repeat training with above settings (for obtaining training times for report mostly): ");
+		repeats = sc.nextInt();
+		System.out.println("running " + repeats + " times:");
+		
+		long totalTime = 0;
+		
+		for (int i=0; i<repeats; i++) {
 		try {
 			writer = new FileWriter("weightsData.csv");
 			System.out.println("csv file created");
@@ -476,21 +481,25 @@ individual.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), randomFlo
 		    writer.append(',');
 		    writer.append("HighestScore");
 		    writer.append('\n');
-		    GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize);
+		    GeneticAlgorithm ga = new GeneticAlgorithm(crossoverRate, elites, games, mutationSigma, populationSize, tournamentSize, threads);
 			long startTime = System.currentTimeMillis();
 			FitnessAssessment result =ga.trainFor(generations, convergenceThreshhold);
 			long endTime   = System.currentTimeMillis();
-			long totalTime = endTime - startTime;
+			long timeElapsed = endTime - startTime;
+			totalTime += timeElapsed;
 			System.out.println("Training complete. The best individual is ");
 			System.out.println(result);
-			System.out.println("GA took: " + totalTime + " ms (" + totalTime/1000 + " seconds)");
-			sc.close();
+			System.out.println("GA took: " + timeElapsed + " ms (" + timeElapsed/1000 + " seconds)");
+			
 			writer.flush();
 			writer.close();
 		} catch (IOException e) {
 			
 		}
+		}
 		
+		System.out.println("On average, training with the above settings take " + totalTime/repeats + " ms");
+		sc.close();
 	}
 
 	// stores information about the fitness of an individual
