@@ -1,3 +1,5 @@
+// when combining everything into PlayerSkeleton.java for submitting, java annoyingly complains if you copy the import over
+// it also complains loudly when copying over to PlayerSkeleton about static variables, so all static variables were instanced
 import java.util.Random;
 
 // this is a copy of the state file in the skeleton 
@@ -7,9 +9,9 @@ import java.util.Random;
 // then, use tryMove to get all the states resulting from trying out all possible moves  
 
 public class ImprovedState {
-	public static final int COLS = 10;
-	public static final int ROWS = 21;
-	public static final int N_PIECES = 7;
+	public final int COLS = 10;
+	public final int ROWS = 21;
+	public final int N_PIECES = 7;
 	// this rng is used to ensure identical piece sequences
 	private Random rng = new java.util.Random();
 
@@ -34,26 +36,26 @@ public class ImprovedState {
 
 	// all legal moves - first index is piece type - then a list of 2-length
 	// arrays
-	protected static int[][][] legalMoves = new int[N_PIECES][][];
+	protected int[][][] legalMoves = new int[N_PIECES][][];
 
 	// indices for legalMoves
-	public static final int ORIENT = 0;
-	public static final int SLOT = 1;
+	public final int ORIENT = 0;
+	public final int SLOT = 1;
 
 	// possible orientations for a given piece type
-	protected static int[] pOrients = { 1, 2, 4, 4, 4, 2, 2 };
+	protected int[] pOrients = { 1, 2, 4, 4, 4, 2, 2 };
 
 	// the next several arrays define the piece vocabulary in detail
 	// width of the pieces [piece ID][orientation]
-	protected static int[][] pWidth = { { 2 }, { 1, 4 }, { 2, 3, 2, 3 }, { 2, 3, 2, 3 }, { 2, 3, 2, 3 }, { 3, 2 },
+	protected int[][] pWidth = { { 2 }, { 1, 4 }, { 2, 3, 2, 3 }, { 2, 3, 2, 3 }, { 2, 3, 2, 3 }, { 3, 2 },
 			{ 3, 2 } };
 	// height of the pieces [piece ID][orientation]
-	private static int[][] pHeight = { { 2 }, { 4, 1 }, { 3, 2, 3, 2 }, { 3, 2, 3, 2 }, { 3, 2, 3, 2 }, { 2, 3 },
+	private int[][] pHeight = { { 2 }, { 4, 1 }, { 3, 2, 3, 2 }, { 3, 2, 3, 2 }, { 3, 2, 3, 2 }, { 2, 3 },
 			{ 2, 3 } };
-	private static int[][][] pBottom = { { { 0, 0 } }, { { 0 }, { 0, 0, 0, 0 } },
+	private int[][][] pBottom = { { { 0, 0 } }, { { 0 }, { 0, 0, 0, 0 } },
 			{ { 0, 0 }, { 0, 1, 1 }, { 2, 0 }, { 0, 0, 0 } }, { { 0, 0 }, { 0, 0, 0 }, { 0, 2 }, { 1, 1, 0 } },
 			{ { 0, 1 }, { 1, 0, 1 }, { 1, 0 }, { 0, 0, 0 } }, { { 0, 0, 1 }, { 1, 0 } }, { { 1, 0, 0 }, { 0, 1 } } };
-	private static int[][][] pTop = { { { 2, 2 } }, { { 4 }, { 1, 1, 1, 1 } },
+	private int[][][] pTop = { { { 2, 2 } }, { { 4 }, { 1, 1, 1, 1 } },
 			{ { 3, 1 }, { 2, 2, 2 }, { 3, 3 }, { 1, 1, 2 } }, { { 1, 3 }, { 2, 1, 1 }, { 3, 3 }, { 2, 2, 2 } },
 			{ { 3, 2 }, { 2, 2, 2 }, { 2, 3 }, { 1, 2, 1 } }, { { 1, 2, 2 }, { 3, 2 } }, { { 2, 2, 1 }, { 2, 3 } } };
 
@@ -146,26 +148,7 @@ public class ImprovedState {
 		return top;
 	}
 
-	public static int[] getpOrients() {
-		return pOrients;
-	}
-
-	public static int[][] getpWidth() {
-		return pWidth;
-	}
-
-	public static int[][] getpHeight() {
-		return pHeight;
-	}
-
-	public static int[][][] getpBottom() {
-		return pBottom;
-	}
-
-	public static int[][][] getpTop() {
-		return pTop;
-	}
-
+	
 	public int getNextPiece() {
 		return nextPiece;
 	}

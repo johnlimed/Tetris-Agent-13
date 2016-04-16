@@ -85,11 +85,11 @@ public class PlayerSkeleton implements Callable<Integer> {
 					ImprovedState future = s.tryMove(movesForAllPieces[nextPiece][move]);
 					float sum = 0.0f; // sum of future utilities
 
-					for (int piece = 0; piece < ImprovedState.N_PIECES; piece++) {
+					for (int piece = 0; piece < State.N_PIECES; piece++) {
 						future.setNextPiece(piece);
 						sum += pickMove(future, piece, lookahead - 1).utility;
 					}
-					float avgFutureUtility = sum / ImprovedState.N_PIECES;
+					float avgFutureUtility = sum / State.N_PIECES;
 
 					if (avgFutureUtility > best) {
 						best = avgFutureUtility;
@@ -111,7 +111,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 			new TFrame(s);
 
 		while (!s.hasLost()) {
-			s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
+			s.makeMove(pickMove(s, s.getNextPiece(), 1).move);
 			if (alwaysDraw) {
 				s.draw();
 				s.drawNext(0, 0);
@@ -151,7 +151,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 		s.pickNextPiece();
 
 		while (!s.hasLost()) {
-			s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
+			s.makeMove(pickMove(s, s.getNextPiece(), 1).move);
 			s.pickNextPiece();
 		}
 
@@ -174,7 +174,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 
 		long startTime = System.currentTimeMillis();
 		System.out.println("You have completed " + p.playGameWithImprovedState() + " rows.");
-		// System.out.println("You have completed "+p.playGame(false, true) +"
+		// System.out.println("You have completed "+p.playGame(false, false) +"
 		// rows.");
 		long endTime = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
@@ -182,6 +182,12 @@ public class PlayerSkeleton implements Callable<Integer> {
 
 	}
 
+	// FeatureFunction.java
+	
+	// FeatureWeightPair.java
+	
+	// ImprovedState.java
+	
 	// Considered as a pit if the adjacent columns are >= 2. Depth = diff in
 	// height with the shortest adjacent col
 	// should refactor this some more
