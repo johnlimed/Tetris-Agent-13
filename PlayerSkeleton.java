@@ -290,15 +290,13 @@ bestMove = move;
 		
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
 		
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.Bumpiness(), -0.020633409f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.029183429f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -0.9369789f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), -0.030098647f, false));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.RowsCleared(), 0.17039244f, true));
-		fwPairs.add(new FeatureWeightPair(new RowTransitions(), -0.16033012f, true));
-		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -0.2552408f, false));
-		// fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.WellSums(), -0.2552408f, false));
-		
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.87448764f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), -0.5054159f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -7.5740294f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.RowTransitions(), -1.1404463f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), -1.9600217f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.4352853f, false));
+		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.WellSums(), -0.9274553f, false));
 				p.setFeatureWeightPairs(fwPairs);
 		
 		long startTime = System.currentTimeMillis();
