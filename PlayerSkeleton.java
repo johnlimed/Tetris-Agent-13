@@ -173,9 +173,8 @@ public class PlayerSkeleton implements Callable<Integer> {
 		p.setFeatureWeightPairs(fwPairs);
 
 		long startTime = System.currentTimeMillis();
-		System.out.println("You have completed " + p.playGameWithImprovedState() + " rows.");
-		// System.out.println("You have completed "+p.playGame(false, false) +"
-		// rows.");
+// 		System.out.println("You have completed " + p.playGameWithImprovedState() + " rows.");
+		System.out.println("You have completed "+p.playGame(false, false) +"rows.");
 		long endTime = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("PlayerSkeleton took: " + totalTime + "ms");
