@@ -1,16 +1,11 @@
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class PlayerSkeleton implements Callable<Integer> {
 
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
 	public static final int N_PIECES = 7;
-	// multithreading of moves is currently not working; it returns different results from the sequential version, so uncommenting for now
-	// private ExecutorService pickMoveThreadPool = Executors.newWorkStealingPool();
 	private ArrayList<FeatureWeightPair> features;
 	private Long seed;
 
@@ -22,7 +17,7 @@ public class PlayerSkeleton implements Callable<Integer> {
 		this.features = features;
 	}
 
-	// returns  h(n) for the given state
+	// returns h(n) for the given state
 	private float evaluate(ImprovedState s) {
 		if (s.hasLost())
 			return Float.NEGATIVE_INFINITY;
@@ -39,135 +34,11 @@ public class PlayerSkeleton implements Callable<Integer> {
 		return playGameWithImprovedState();
 	}
 
-
-	//implement this function to have a working system
-	public int pickMove(State s, int[][] legalMoves) {
-		int bestMove = 0;	
-		float bestValue = Float.NEGATIVE_INFINITY;;
-		/* 
-if (isParallel) {
-        List<Future<Float>> results = new ArrayList<Future<Float>>();
-        Float[] value = new Float[legalMoves.length];
-        ImprovedState currentState = new ImprovedState(s);
-        for (int move=0; move<legalMoves.length; move++) {
-            Slave slavePickMove = new Slave(currentState, move, features);
-            results.add(pickMoveThreadPool.submit(slavePickMove));
-        }
-
-        int counter=0;
-        for(Future<Float> result: results) {
-            try {
-                value[counter] = result.get();
-            } catch (Exception e) {
-                System.out.println("Error caught");
-                pickMoveThreadPool.shutdown();
-            }
-            counter++;
-        }
-        bestValue = value[0];
-        for (int i=0; i<value.length; i++) {
-            // System.out.println("value: " + value[i] + " move: " + i);
-            if (value[i] > bestValue) {
-                bestValue = value[i];
-                bestMove = i;
-            }
-        }
-
-}
-		 */
-		// non-parallel
-		ImprovedState currentState = new ImprovedState(s);
-		for (int move = 0; move < legalMoves.length; move++) {
-			currentState.makeMove(move);
-			float utility = evaluate(currentState);
-			currentState.undo();
-			if (utility > bestValue) {
-				bestValue = utility;
-				bestMove = move;
-			}
-		}
-
-		return bestMove;
-	}
-
-	// picks the best move when running the game using ImprovedState
-	public int pickMoveForImprovedState(ImprovedState s, int[][] legalMoves) throws InterruptedException {
-		int bestMove = 0;	
-		float bestValue = Float.NEGATIVE_INFINITY;;
-		/*
-		int seq, par;
-
-        {
-        	ArrayList<Callable<Float>> tasks = new ArrayList<Callable<Float>>();
-        List<Future<Float>> results;
-        Float[] value = new Float[legalMoves.length];
-        ImprovedState currentState = new ImprovedState(s);
-        for (int move=0; move<legalMoves.length; move++) {
-            Slave slavePickMove = new Slave(currentState, move, features);
-            tasks.add(slavePickMove);
-            // results.add(pickMoveThreadPool.submit(slavePickMove));
-        }
-        results = pickMoveThreadPool.invokeAll(tasks);
-        int counter=0;
-        for(Future<Float> result: results) {
-            try {
-                value[counter] = result.get();
-            } catch (Exception e) {
-                System.out.println("Error caught");
-                pickMoveThreadPool.shutdown();
-            }
-            counter++;
-        }
-
-        bestValue = value[0];
-        for (int i=0; i<value.length; i++) {
-            // System.out.println("value: " + value[i] + " move: " + i);
-            if (value[i] > bestValue) {
-                bestValue = value[i];
-                bestMove = i;
-            }
-        }
-        par = bestMove;
-}
-		bestMove = 0;	
-        bestValue = Float.NEGATIVE_INFINITY;;
-
-		 */
-
-		// non-parallel implementation
-		// ImprovedState copy = new ImprovedState(s);
-		for (int move = 0; move < legalMoves.length; move++) {
-
-			// ImprovedState resultingState = s.tryMove(move);
-			// float utility = evaluate(resultingState);
-			// if (utility > bestValue) {
-			// bestValue = utility;
-			// bestMove = move;
-			// }
-
-			s.makeMove(move);
-			float utility = evaluate(s);
-			s.undo();
-
-			// if (s.isCurStateEqual(copy) == false)
-			// 		System.out.println("current state not equals.");
-
-			if (utility > bestValue) {
-				bestValue = utility;
-				bestMove = move;
-			}
-		}
-
-		// for checking if the results returned for both are different
-		// if (seq != par)
-		// System.out.println("Sequential implementation: " + seq + " parallel: " + par);
-
-		return bestMove;
-	}
-
 	// lookahead is the number of future pieces we will consider
-	// for example, a value of 1 means that for the current state, execute each legal move m to get some new state. 
-	// From this new state, calculate the highest utility each of the 7 pieces can have and average this out to get the utility for move m
+	// for example, a value of 1 means that for the current state, legal move m
+	// is executed to get some new state.
+	// From this new state, calculate the highest utility each of the 7 pieces
+	// can have and average this out to get the utility for move m
 	private MoveUtilityPair pickMove(State s, int nextPiece, int lookahead) {
 		return pickMove(new ImprovedState(s), nextPiece, lookahead);
 	}
@@ -188,49 +59,50 @@ if (isParallel) {
 					bestMove = move;
 				}
 			}
-		}
-	else {
-		// evaluate the score of the state resulting from each possible move
-		
-		ArrayList<MoveUtilityPair> scores = new ArrayList<MoveUtilityPair>(movesForAllPieces[nextPiece].length);
-		// int numNodesToExpand = (int)(0.25 * movesForAllPieces[nextPiece].length);
-		int numNodesToExpand = 3; // the best n nodes to expand
-		
-		for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
-			s.makeMove(movesForAllPieces[nextPiece][move]);
-			float score = evaluate(s);
-			scores.add(new MoveUtilityPair(move, score));
-			s.undo();
-		}
-		Collections.sort(scores);
-		int minIndex = (scores.size() - numNodesToExpand >= 0) ? scores.size() - numNodesToExpand : 0; 
-					
-		for (int i = minIndex; i < scores.size(); i++) {
-			int move = scores.get(i).move;
-		float curUtility = scores.get(i).utility;
-			if (curUtility > Float.NEGATIVE_INFINITY) {
+		} else {
+			// evaluate the score of the state resulting from each possible move
 
-			ImprovedState future = s.tryMove(movesForAllPieces[nextPiece][move]);
-			float sum = 0.0f; // sum of future utilities
-			
-			for (int piece=0; piece<ImprovedState.N_PIECES; piece++) {
-				future.setNextPiece(piece);
-				sum += pickMove(future, piece, lookahead-1).utility;
+			ArrayList<MoveUtilityPair> scores = new ArrayList<MoveUtilityPair>(movesForAllPieces[nextPiece].length);
+			int numNodesToExpand = 3; // the best n nodes to expand
+
+			for (int move = 0; move < movesForAllPieces[nextPiece].length; move++) {
+				s.makeMove(movesForAllPieces[nextPiece][move]);
+				float score = evaluate(s);
+				scores.add(new MoveUtilityPair(move, score));
+				s.undo();
 			}
-			float avgFutureUtility = sum / ImprovedState.N_PIECES;
-			
-			if (avgFutureUtility > best) {
-best = avgFutureUtility;
-bestMove = move;
+
+			Collections.sort(scores);
+			// indices lower than this not expanded
+			int minIndex = (scores.size() - numNodesToExpand >= 0) ? scores.size() - numNodesToExpand : 0;
+
+			for (int i = minIndex; i < scores.size(); i++) {
+				int move = scores.get(i).move;
+				float curUtility = scores.get(i).utility;
+				if (curUtility > Float.NEGATIVE_INFINITY) { // no point if we
+															// have already lost
+
+					ImprovedState future = s.tryMove(movesForAllPieces[nextPiece][move]);
+					float sum = 0.0f; // sum of future utilities
+
+					for (int piece = 0; piece < ImprovedState.N_PIECES; piece++) {
+						future.setNextPiece(piece);
+						sum += pickMove(future, piece, lookahead - 1).utility;
+					}
+					float avgFutureUtility = sum / ImprovedState.N_PIECES;
+
+					if (avgFutureUtility > best) {
+						best = avgFutureUtility;
+						bestMove = move;
+					}
+				}
 			}
-			}
-	}
 		}
-		
-	return new MoveUtilityPair(bestMove, best); 
+
+		return new MoveUtilityPair(bestMove, best);
 	}
-		
-			// plays a game , returning the number of rows complete
+
+	// plays a game , returning the number of rows complete
 	// use the setFeatureWeightPairs function first
 	public int playGame(boolean alwaysDraw, boolean drawOnLoss) throws InterruptedException {
 		assert (!features.isEmpty()); // must set some features to use first
@@ -238,12 +110,11 @@ bestMove = move;
 		if (alwaysDraw)
 			new TFrame(s);
 
-		while(!s.hasLost()) {
-			// s.makeMove(pickMove(s,s.legalMoves()));
+		while (!s.hasLost()) {
 			s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
 			if (alwaysDraw) {
 				s.draw();
-				s.drawNext(0,0);
+				s.drawNext(0, 0);
 
 				try {
 					Thread.sleep(100);
@@ -255,7 +126,7 @@ bestMove = move;
 		if (alwaysDraw == false && drawOnLoss == true) {
 			new TFrame(s);
 			s.draw();
-			s.drawNext(0,0);
+			s.drawNext(0, 0);
 		}
 
 		return s.getRowsCleared();
@@ -266,30 +137,32 @@ bestMove = move;
 		this.seed = seed;
 	}
 
-	// identical to the playGame function except that ImprovedState is used which is much more useful for training purposes
+	// identical to the playGame function except that ImprovedState is used
+	// which is much more useful for training purposes
 	// note that drawing isn't supported though with this one
 	// use the setFeatureWeightPairs function first
 	public int playGameWithImprovedState() throws InterruptedException {
-		assert (!features.isEmpty()); // must set some features to use first
+		assert (!features.isEmpty());
 		ImprovedState s = new ImprovedState();
 		if (seed != null) {
 			s.setSeed(seed);
 		}
 		// s.setSeed(1459523385737L);
 		s.pickNextPiece();
-		while(!s.hasLost()) {
+
+		while (!s.hasLost()) {
 			s.makeMove(pickMove(s, s.getNextPiece(), 0).move);
 			s.pickNextPiece();
 		}
 
-		return s.getRowsCleared();	
+		return s.getRowsCleared();
 	}
 
 	public static void main(String[] args) throws InterruptedException {
 		PlayerSkeleton p = new PlayerSkeleton();
-		
+
 		ArrayList<FeatureWeightPair> fwPairs = new ArrayList<FeatureWeightPair>();
-		
+
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MaxHeight(), -0.87448764f, false));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.MeanHeight(), -0.5054159f, false));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.NumHoles(), -7.5740294f, false));
@@ -297,23 +170,24 @@ bestMove = move;
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.StdDevHeight(), -1.9600217f, false));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.SumOfPitDepth(), -1.4352853f, false));
 		fwPairs.add(new FeatureWeightPair(new PlayerSkeleton.WellSums(), -0.9274553f, false));
-				p.setFeatureWeightPairs(fwPairs);
-		
+		p.setFeatureWeightPairs(fwPairs);
+
 		long startTime = System.currentTimeMillis();
-		System.out.println("You have completed "+p.playGameWithImprovedState() +" rows.");
-// System.out.println("You have completed "+p.playGame(false, true) +" rows.");
-		long endTime   = System.currentTimeMillis();
+		System.out.println("You have completed " + p.playGameWithImprovedState() + " rows.");
+		// System.out.println("You have completed "+p.playGame(false, true) +"
+		// rows.");
+		long endTime = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
-		System.out.println("PlayerSkeleton took: "+totalTime+"ms");
+		System.out.println("PlayerSkeleton took: " + totalTime + "ms");
 
 	}
 
-
-	// Considered as a pit if the adjacent columns are >= 2. Depth = diff in height with the shortest adjacent col
+	// Considered as a pit if the adjacent columns are >= 2. Depth = diff in
+	// height with the shortest adjacent col
 	// should refactor this some more
 	public static class SumOfPitDepth implements FeatureFunction {
 		@Override
-		public float evaluate(ImprovedState s)  {
+		public float evaluate(ImprovedState s) {
 			int[] top = s.getTop();
 			int sumOfPitDepth = 0;
 
@@ -331,8 +205,8 @@ bestMove = move;
 
 			for (int col = 0; col < State.COLS - 2; col++) {
 				heightOfLeftColumn = top[col];
-				pitHeight = top[col+1];
-				heightOfRightCol = top[col+2];
+				pitHeight = top[col + 1];
+				heightOfRightCol = top[col + 2];
 
 				int leftDiff = heightOfLeftColumn - pitHeight;
 				int rightDiff = heightOfRightCol - pitHeight;
@@ -358,19 +232,19 @@ bestMove = move;
 	// Returns the average height across the columns
 	public static class MeanHeight implements FeatureFunction {
 		@Override
-		public float evaluate(ImprovedState s)  {
+		public float evaluate(ImprovedState s) {
 			float avgHeight = 0;
 			int[] top = s.getTop();
 			for (int i = 0; i < State.COLS; i++) {
 				avgHeight += top[i];
 			}
-			return avgHeight/State.COLS;
+			return avgHeight / State.COLS;
 		}
 	}
 
 	public static class RowsCleared implements FeatureFunction {
 		@Override
-		public float evaluate(ImprovedState s)  {
+		public float evaluate(ImprovedState s) {
 			return (float) s.getRowsCleared();
 		}
 	}
@@ -378,7 +252,7 @@ bestMove = move;
 	// returns aggregate height for all columns
 	public static class AggHeight implements FeatureFunction {
 		@Override
-		public float evaluate(ImprovedState s)  {
+		public float evaluate(ImprovedState s) {
 			int aggHeight = 0;
 
 			int[] top = s.getTop();
@@ -391,7 +265,8 @@ bestMove = move;
 		}
 	}
 
-	// returns number of holes. A hole is an empty space such that there is at least one tile in the same column above it
+	// returns number of holes. A hole is an empty space such that there is at
+	// least one tile in the same column above it
 	public static class NumHoles implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
@@ -407,12 +282,12 @@ bestMove = move;
 					}
 				}
 			}
-			// System.out.println("numHoles: " + numHoles);
+
 			return numHoles;
 		}
 	}
 
-	// number of blocks above holes
+	// number of occupied cells above holes
 	public static class TotalHoleDepth implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
@@ -422,20 +297,20 @@ bestMove = move;
 			int[] top = s.getTop();
 
 			for (int c = 0; c < State.COLS; c++) {
-				for (int r = 0; r < top[c]; r++) 
+				for (int r = 0; r < top[c]; r++)
 					if (field[r][c] == 0) { // this is a hole, check rows above
-						for (int i=r+1; i<=top[c]; i++)
+						for (int i = r + 1; i <= top[c]; i++)
 							if (field[i][c] != 0)
-								holeDepths++;	
+								holeDepths++;
 					}
 			}
 
-			// System.out.println("hole depths: " + holeDepths);
 			return holeDepths;
 		}
 	}
 
-	// calculates bumpiness, the sum of the absolute differences between heights of consecutive adjacent columns
+	// calculates bumpiness, the sum of the absolute differences between heights
+	// of consecutive adjacent columns
 	public static class Bumpiness implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
@@ -444,17 +319,18 @@ bestMove = move;
 			int[] top = s.getTop();
 
 			for (int i = 0; i < State.COLS - 1; i++) {
-				bumpiness += Math.abs(top[i] - top[i+1]);
+				bumpiness += Math.abs(top[i] - top[i + 1]);
 			}
-			// System.out.println("bumpiness: " + bumpiness);
 
 			return bumpiness;
 		}
 	}
 
 	// The name is a bit misleading, but i can't think of a better name
-	// computes sum of the absolute differences between squared heights of consecutive adjacent columns
-	// for example, for columns with heights of 5 and 4, the difference would be 5^2 - 4^2 = 9
+	// computes sum of the absolute differences between squared heights of
+	// consecutive adjacent columns
+	// for example, for columns with heights of 5 and 4, the difference would be
+	// 5^2 - 4^2 = 9
 	// the hope is that this encourages "smoother" play
 	public static class BumpinessSquared implements FeatureFunction {
 		@Override
@@ -464,15 +340,14 @@ bestMove = move;
 			int[] top = s.getTop();
 
 			for (int i = 0; i < State.COLS - 1; i++) {
-				bumpiness += Math.abs((top[i] * top[i]) - (top[i+1] * top[i+1]));
+				bumpiness += Math.abs((top[i] * top[i]) - (top[i + 1] * top[i + 1]));
 			}
 
 			return bumpiness;
 		}
 	}
 
-
-	// maximum column height heuristic
+	// maximum column height
 	public static class MaxHeight implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
@@ -481,26 +356,25 @@ bestMove = move;
 			int[] top = s.getTop();
 
 			for (int i = 0; i < State.COLS; i++) {
-				// System.out.println("top: " + top[i]);
 				if (top[i] > maxColumnHeight) {
 					maxColumnHeight = top[i];
 				}
-				// System.out.println("maxColumnHeight: " + maxColumnHeight);
 			}
 			return maxColumnHeight;
 		}
 	}
 
-	// computes total row transitions. Row transitions happen when an empty cell is adjacent to a filled cell and vice versa
+	// computes total row transitions. Row transitions happen when an empty cell
+	// is adjacent to a filled cell and vice versa
 	public static class RowTransitions implements FeatureFunction {
 		@Override
 		public float evaluate(ImprovedState s) {
 			int nRowTransitions = 0;
 			int[][] field = s.getField();
 
-			for (int r=0; r<State.ROWS; r++)
-				for (int c=0; c<State.COLS-1; c++) {
-					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c+1] == 0;
+			for (int r = 0; r < State.ROWS; r++)
+				for (int c = 0; c < State.COLS - 1; c++) {
+					boolean isCurEmpty = field[r][c] == 0, isNextEmpty = field[r][c + 1] == 0;
 
 					if ((isCurEmpty && !isNextEmpty) || (!isCurEmpty && isNextEmpty))
 						nRowTransitions++;
@@ -522,7 +396,7 @@ bestMove = move;
 			float mean = sum / State.COLS;
 			float sumDiffFromMean = 0.0f;
 
-			for (int c=0; c<State.COLS; c++)
+			for (int c = 0; c < State.COLS; c++)
 				sumDiffFromMean = (top[c] - mean) * (top[c] - mean);
 
 			return (float) Math.sqrt(sumDiffFromMean / (State.COLS - 1));
@@ -531,33 +405,41 @@ bestMove = move;
 
 	// computes total well sums
 	// a well is the number of empty cells above a column's top piece such that
-	// the top cell in the sequence is surrounded by either the board boundary or occupied cells in neighbouring columns
-		public static class WellSums implements FeatureFunction {
-			@Override
-			public float evaluate(ImprovedState s) {
-				int wellSums = 0;
-				int[] top = s.getTop();
-				// check well sums for columns that don't boarder the left and right edge
-				for (int c=1; c<State.COLS - 1; c++) {
-								int curTop = top[c];
-								// get the min height of the adjacent left and right columns
-									int minAdjColHeight = Math.min(top[c-1], top[c+1]);
-									// if the current column is <= than the heights of its neighbours, then there is a well
-									if (curTop <= minAdjColHeight)
-										wellSums += minAdjColHeight - curTop; // this works correctly too if the heights of this columns and its neighbours are the same
-				}
-				
-				// check for the left and rightmost column
-				if (top[1] > top[0])
-					wellSums += top[1] - top[0];
-
-				if (top[State.COLS - 2] > top[State.COLS - 1])
-					wellSums += top[State.COLS - 2] - top[State.COLS - 1];
-
-									return wellSums;
+	// the top cell in the sequence is surrounded by either the board boundary
+	// or occupied cells in neighbouring columns
+	public static class WellSums implements FeatureFunction {
+		@Override
+		public float evaluate(ImprovedState s) {
+			int wellSums = 0;
+			int[] top = s.getTop();
+			// check well sums for columns that don't boarder the left and right
+			// edge
+			for (int c = 1; c < State.COLS - 1; c++) {
+				int curTop = top[c];
+				// get the min height of the adjacent left and right columns
+				int minAdjColHeight = Math.min(top[c - 1], top[c + 1]);
+				// if the current column is <= than the heights of its
+				// neighbours, then there is a well
+				if (curTop <= minAdjColHeight)
+					wellSums += minAdjColHeight - curTop; // this works
+															// correctly too if
+															// the heights of
+															// this columns and
+															// its neighbours
+															// are the same
 			}
+
+			// check for the left and rightmost column
+			if (top[1] > top[0])
+				wellSums += top[1] - top[0];
+
+			if (top[State.COLS - 2] > top[State.COLS - 1])
+				wellSums += top[State.COLS - 2] - top[State.COLS - 1];
+
+			return wellSums;
 		}
-		
+	}
+
 	// convenience class for associating a move index with its utility
 	private class MoveUtilityPair implements Comparable<MoveUtilityPair> {
 		public float utility = 0.0f;
@@ -567,15 +449,15 @@ bestMove = move;
 			move = m;
 			utility = u;
 		}
-		
+
 		public int compareTo(MoveUtilityPair other) {
 			if (utility < other.utility)
 				return -1;
 
-			if (utility> other.utility)
+			if (utility > other.utility)
 				return 1;
 
 			return 0;
+		}
 	}
-}
 }

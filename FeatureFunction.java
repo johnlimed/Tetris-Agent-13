@@ -2,5 +2,5 @@
 public interface FeatureFunction {
 
 	public float evaluate(ImprovedState s);
-	
+
 }
